@@ -1,0 +1,26 @@
+[project]
+name = "slax"
+version = "0.0.1"
+authors = [
+  { name="Thomas Summe", email="tsumme@nd.edu" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+"flax == 0.7.5",
+"optax",
+"scikit-learn",
+"matplotlib",
+"jax",
+"randman @ git+https://git@github.com/fzenke/randman.git"
+]
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"
+Issues = "https://github.com/pypa/sampleproject/issues"

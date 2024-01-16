@@ -1,0 +1,6 @@
+flax==0.7.5
+optax
+scikit-learn
+matplotlib
+jax
+randman@ git+https://git@github.com/fzenke/randman.git
