@@ -113,7 +113,7 @@ class FPTT(nn.Module):
     snnModel: Callable
     loss_fn: Callable
     optimizer: Callable
-    alpha: float
+    alpha: float = 0.5
 
     def __call__(self,params,carry,batch,opt_state):
         '''

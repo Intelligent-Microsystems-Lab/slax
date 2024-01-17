@@ -1,3 +1,7 @@
 build/
 tmp/*
 src/slax/__pycache__/
+.DS_Store/
+Slax.egg-info/
+src/slax.egg-info/
+slax/.DS_Store/

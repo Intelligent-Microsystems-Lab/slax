@@ -7,7 +7,7 @@ def fast_sigmoid(slope=25):
     '''
     A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the fast-sigmoid
     function from Zenke, F., & Ganguli, S. (2018). Superspike: Supervised learning in multilayer spiking neural networks. Neural computation, 30(6), 1514-1541. 
-    
+
     Args:
     slope: The sharpness factor of the fast sigmoid function
     '''
@@ -23,7 +23,7 @@ def fast_sigmoid(slope=25):
         t, = tangent
         alpha = slope
 
-        scale = 1 / (alpha * jnp.abs(x) + 1.0) ** 2
+        scale = 1 / (alpha * jnp.abs(x) + 1.) ** 2
         return (fs(x),scale*t)
     
     return fs

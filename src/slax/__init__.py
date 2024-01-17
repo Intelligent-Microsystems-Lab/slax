@@ -7,7 +7,7 @@ from .gen_ll import gen_loss_landscape
 from . import surrogates
 from .surrogates import fast_sigmoid
 from . import utils
-from .utils import train_online, train_online_deferred, train_offline
+from .utils import train_online, train_online_deferred, train_offline, FPTT
 
 def main():
     print('Slax')
