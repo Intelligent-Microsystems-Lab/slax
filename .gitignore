@@ -6,3 +6,4 @@ Slax.egg-info/
 src/slax.egg-info/
 slax/.DS_Store/
 src/.DS_Store
+*.pyc

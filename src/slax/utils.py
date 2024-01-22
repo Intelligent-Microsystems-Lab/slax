@@ -5,12 +5,8 @@ from typing import Any, Callable, Sequence
 from jax.tree_util import Partial, tree_leaves, tree_structure, tree_unflatten, tree_map
 from .neurons import LIF, LTC
 from jax.lax import stop_gradient as stop_grad
-#from utils import train_online, FPTT, train_offline, train_online_deferred
 import optax
-from flax.core.frozen_dict import unfreeze, freeze
 from jax.flatten_util import ravel_pytree
-from .surrogates import fast_sigmoid
-#import randman_dataset as rd
 
 class train_online_deferred(nn.Module):
     '''
@@ -198,7 +194,7 @@ def layerwise_cosine_similarity(pytree_0,pytree_1):
     Returns:
         A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
     '''
-    return tree_map(lambda x,y: optax.cosine_similarity(x.flatten(),y.flatten),pytree_0,pytree_1)
+    return tree_map(lambda x,y: optax.cosine_similarity(x.flatten(),y.flatten()),pytree_0,pytree_1)
 
 def global_cosine_similarity(pytree_0,pytree_1):
     '''
@@ -235,6 +231,25 @@ def compare_grads(train_func,reference_params,reference_grad,train_func_args,com
     _,_,_,_,new_grad,_ = train_func(reference_params,carry,batch,opt_state)
     reference_grad = tree_unflatten(tree_structure(new_grad),tree_leaves(reference_params))
     return comparison_func(reference_grad,new_grad)
-    
 
-
+def recurrent(chain,model_carry):
+    def execute(carry,x):
+        counter = 0
+        if model_carry == None:
+            for mdl in chain:
+                if 'v_threshold' in mdl.__annotations__.keys():
+                    carry[counter],x = mdl(carry[counter],x)
+                    counter += 1
+                else:
+                    x = mdl(x)
+            carry[counter-1]['rec'] = jnp.zeros_like(x)
+        else:
+            x = jnp.concatenate([x,carry[len(chain)-1]['rec']])
+            for mdl in chain:
+                if 'v_threshold' in mdl.__annotations__.keys():
+                    carry[counter],x = mdl(carry[counter],x)
+                    counter += 1
+                else:
+                    x = mdl(x)
+        return carry,x
+    return execute
