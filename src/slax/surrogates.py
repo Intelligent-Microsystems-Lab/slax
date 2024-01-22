@@ -28,7 +28,20 @@ def fast_sigmoid(slope=25):
     
     return fs
 
-
+def atan(alpha=2.):
+    @jax.custom_jvp
+    def arctangent(x):
+        # if not dtype float grad ops wont work
+      return jnp.array(x >= 0.0, dtype=x.dtype)
+    
+    @arctangent.defjvp
+    def backward(primal, tangent):
+        x, = primal
+        t, = tangent
+        grad = alpha / 2 / (1 + (jnp.pi / 2 * alpha * x)**2) * t
+        return arctangent(x),grad
+    
+    return arctangent
 
 gamma = 1.#.5  # gradient scale
 lens = 0.3

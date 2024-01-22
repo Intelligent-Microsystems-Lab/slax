@@ -5,7 +5,7 @@ from .custom_learning import DenseOSTL
 from .randman_dataset import randman
 from .gen_ll import gen_loss_landscape
 from . import surrogates
-from .surrogates import fast_sigmoid
+from .surrogates import fast_sigmoid, atan
 from . import utils
 from .utils import train_online, train_online_deferred, train_offline, FPTT, compare_grads, recurrent
 

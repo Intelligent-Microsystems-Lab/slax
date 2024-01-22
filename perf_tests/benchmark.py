@@ -8,7 +8,7 @@ import os
 def rockpool_torch():
     import torch
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from rockpool.nn.modules import LIFTorch, LinearTorch
     from rockpool.nn.combinators import Sequential
     import rockpool
@@ -16,7 +16,15 @@ def rockpool_torch():
     benchmark_title = f"Rockpool<br>v{rockpool.__version__}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
+        # model = Sequential(
+        #     LinearTorch(shape=(n_neurons, n_neurons)),
+        #     LIFTorch(n_neurons),
+        # ).to(device)
         model = Sequential(
+            LinearTorch(shape=(n_neurons, n_neurons)),
+            LIFTorch(n_neurons),
+            LinearTorch(shape=(n_neurons, n_neurons)),
+            LIFTorch(n_neurons),
             LinearTorch(shape=(n_neurons, n_neurons)),
             LIFTorch(n_neurons),
         ).to(device)
@@ -42,7 +50,7 @@ def rockpool_torch():
 def rockpool_exodus():
     import torch
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from rockpool.nn.modules import LIFExodus, LinearTorch
     from rockpool.nn.combinators import Sequential
     import rockpool
@@ -50,7 +58,15 @@ def rockpool_exodus():
     benchmark_title = f"Rockpool EXODUS<br>v{rockpool.__version__}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
+        # model = Sequential(
+        #     LinearTorch(shape=(n_neurons, n_neurons)),
+        #     LIFExodus(n_neurons),
+        # ).to(device)
         model = Sequential(
+            LinearTorch(shape=(n_neurons, n_neurons)),
+            LIFExodus(n_neurons),
+            LinearTorch(shape=(n_neurons, n_neurons)),
+            LIFExodus(n_neurons),
             LinearTorch(shape=(n_neurons, n_neurons)),
             LIFExodus(n_neurons),
         ).to(device)
@@ -77,7 +93,7 @@ def sinabs():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from sinabs.layers import LIF
     import sinabs
 
@@ -111,14 +127,22 @@ def sinabs_exodus():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from sinabs.exodus.layers import LIF
     import sinabs
 
     benchmark_title = f"Sinabs EXODUS<br>v{sinabs.exodus.__version__}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
+        # model = nn.Sequential(
+        #     nn.Linear(n_neurons, n_neurons),
+        #     LIF(tau_mem=torch.tensor(10.0)),
+        # ).to(device)
         model = nn.Sequential(
+            nn.Linear(n_neurons, n_neurons),
+            LIF(tau_mem=torch.tensor(10.0)),
+            nn.Linear(n_neurons, n_neurons),
+            LIF(tau_mem=torch.tensor(10.0)),
             nn.Linear(n_neurons, n_neurons),
             LIF(tau_mem=torch.tensor(10.0)),
         ).to(device)
@@ -145,7 +169,7 @@ def norse():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from norse.torch.module.lif import LIF
     from norse.torch import SequentialState
     import norse
@@ -153,11 +177,19 @@ def norse():
     benchmark_title = f"Norse<br>v{norse.__version__}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
+        # model = SequentialState(
+        #     nn.Linear(n_neurons, n_neurons),
+        #     LIF(),
+        # )
         model = SequentialState(
             nn.Linear(n_neurons, n_neurons),
             LIF(),
+            nn.Linear(n_neurons, n_neurons),
+            LIF(),
+            nn.Linear(n_neurons, n_neurons),
+            LIF(),
         )
-        # model = torch.compile(model, mode="max-autotune")
+        model = torch.compile(model, mode="max-autotune")
         model = model.to(device)
         input_static = torch.randn(n_steps, batch_size, n_neurons).to(device)
         with torch.no_grad():
@@ -182,7 +214,7 @@ def snntorch():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     import snntorch
 
     benchmark_title = f"snnTorch<br>v{snntorch.__version__}"
@@ -195,17 +227,31 @@ def snntorch():
                 self.lif = snntorch.Leaky(beta=beta)
                 self.mem = self.lif.init_leaky()
 
+                self.fc2 = nn.Linear(n_neurons, n_neurons)
+                self.lif2 = snntorch.Leaky(beta=beta)
+                self.mem2 = self.lif.init_leaky()
+
+                self.fc3 = nn.Linear(n_neurons, n_neurons)
+                self.lif3 = snntorch.Leaky(beta=beta)
+                self.mem3 = self.lif.init_leaky()
+
             def forward(self, x):
                 output = []
                 mem = self.mem
+                mem2 = self.mem2
+                mem3 = self.mem3
                 for inp in x:
                     cur = self.fc(inp)
                     spk, mem = self.lif(cur, mem)
+                    cur = self.fc2(spk)
+                    spk, mem2 = self.lif2(cur, mem2)
+                    cur = self.fc3(spk)
+                    spk, mem3 = self.lif3(cur, mem3)
                     output.append(spk)
                 return torch.stack(output)
 
         model = Model()
-        # model = torch.compile(model, mode="max-autotune")
+        #model = torch.compile(model, mode="max-autotune")
         model = model.to(device)
         input_static = torch.randn(n_steps, batch_size, n_neurons).to(device)
         with torch.no_grad():
@@ -231,7 +277,7 @@ def spikingjelly():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from spikingjelly.activation_based import neuron, surrogate, functional, layer
 
     benchmark_title = f"SpikingJelly PyTorch<br>v0.0.0.0.15"
@@ -240,7 +286,21 @@ def spikingjelly():
         class Model(nn.Module):
             def __init__(self, tau=5.0):
                 super().__init__()
+                # self.model = nn.Sequential(
+                #     layer.Linear(n_neurons, n_neurons),
+                #     neuron.LIFNode(
+                #         tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                #     ),
+                # )
                 self.model = nn.Sequential(
+                    layer.Linear(n_neurons, n_neurons),
+                    neuron.LIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    ),
+                    layer.Linear(n_neurons, n_neurons),
+                    neuron.LIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    ),
                     layer.Linear(n_neurons, n_neurons),
                     neuron.LIFNode(
                         tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
@@ -274,7 +334,7 @@ def spikingjelly_cupy():
     import torch
     from torch import nn
 
-    torch.cuda.set_per_process_memory_fraction(0.7, device=None)
+    #torch.cuda.set_per_process_memory_fraction(0.7, device=None)
     from spikingjelly.activation_based import neuron, surrogate, functional, layer
 
     benchmark_title = f"SpikingJelly CuPy<br>v0.0.0.0.15"
@@ -282,8 +342,22 @@ def spikingjelly_cupy():
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         class Model(nn.Module):
             def __init__(self, tau=5.0):
-                super().__init__()
+                # super().__init__()
+                # self.model = nn.Sequential(
+                #     layer.Linear(n_neurons, n_neurons),
+                #     neuron.LIFNode(
+                #         tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                #     ),
+                # )
                 self.model = nn.Sequential(
+                    layer.Linear(n_neurons, n_neurons),
+                    neuron.LIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    ),
+                    layer.Linear(n_neurons, n_neurons),
+                    neuron.LIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    ),
                     layer.Linear(n_neurons, n_neurons),
                     neuron.LIFNode(
                         tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
@@ -372,23 +446,40 @@ def spyx_full():
         def Model(x):
             # print(x.shape)
             #x = x.transpose(1,0,2)
-            x = hk.BatchApply(hk.Linear(n_neurons, with_bias=False))(x)
+            x = hk.BatchApply(hk.Linear(n_neurons))(x)
 
             core = hk.DeepRNN(
                 [
-                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.superspike(k=10))),
+                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
                 ]
             )
-            # print(x.shape)
-            # print(x.shape[0])
-
-            # static unroll for maximum performance
             spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps
+                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
+            )
+            x = hk.BatchApply(hk.Linear(n_neurons))(x)
+
+            core = hk.DeepRNN(
+                [
+                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
+                ]
+            )
+            spikes, V = hk.dynamic_unroll(
+                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
+            )
+            x = hk.BatchApply(hk.Linear(n_neurons))(x)
+
+            core = hk.DeepRNN(
+                [
+                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
+                ]
+            )
+            spikes, V = hk.dynamic_unroll(
+                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
             )
             # spikes, V = hk.static_unroll(
             #     core, x, core.initial_state(x.shape[1]), time_major=True#, unroll=5
             # )
+            
 
             return spikes, V
 
@@ -507,17 +598,17 @@ def slax_full():
                 carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
 
                 # static unroll for maximum performance
-                carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=n_steps)(0.5)(carry,x)
+                carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
 
                 if n_layers >= 2:
-                    x = nn.Dense(n_neurons, use_bias=False)(x)
+                    x = nn.Dense(n_neurons)(x)
                     carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
-                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=n_steps)(0.5)(carry,x)
+                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
 
                 if n_layers >= 3:
-                    x = nn.Dense(n_neurons, use_bias=False)(x)
+                    x = nn.Dense(n_neurons)(x)
                     carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
-                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=n_steps)(0.5)(carry,x)
+                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
 
 
                 return spikes, carry
@@ -581,7 +672,7 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    device = "cuda"
+    device = "mps"#"cuda"
 
     for n_neurons in [
         1024,
@@ -603,17 +694,11 @@ if __name__ == "__main__":
             batch_size=batch_size,
             device=device,
         )
-
-        if (
-            bench_desc[:4] == "slax" or "spyx"
-        ):  # Spyx uses grad which computes the forward and backward pass in one go, so we need to subtract here.
-            backward_times = (
-                np.array(backward_times).mean() - np.array(forward_times).mean()
-            )
+        if (bench_desc[:4] == "slax") or (bench_desc[:4] == "spyx") or (bench_desc[:4] == "Spyx"):  # Spyx uses grad which computes the forward and backward pass in one go, so we need to subtract here.
+            backward_times = (np.array(backward_times).mean() - np.array(forward_times).mean())
             memory = "nan"
         else:
             import torch
-
             memory = torch.cuda.max_memory_allocated()
 
         log_result(
