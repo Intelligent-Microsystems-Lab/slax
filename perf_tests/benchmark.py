@@ -4,6 +4,9 @@ import argparse
 import numpy as np
 import os
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+
 
 def rockpool_torch():
     import torch
@@ -342,7 +345,7 @@ def spikingjelly_cupy():
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         class Model(nn.Module):
             def __init__(self, tau=5.0):
-                # super().__init__()
+                super().__init__()
                 # self.model = nn.Sequential(
                 #     layer.Linear(n_neurons, n_neurons),
                 #     neuron.LIFNode(
@@ -613,8 +616,8 @@ def slax_full():
 
                 return spikes, carry
 
-        #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
-        input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
+        input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
+        #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
 
         key = jax.random.PRNGKey(0)
         # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
@@ -672,14 +675,15 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    device = "mps"#"cuda"
+    device = "cuda"
 
     for n_neurons in [
         1024,
         2048,
         4096,
-        8192,
-        16384,
+        4096 + 2048,
+        #8192,
+        #16384,
     ]:  #  1024, 2048, 4096, 8192, 16384,
         prepare_fn, forward_fn, backward_fn, bench_desc = benchmark()
         print("Benchmarking", bench_desc, "with n_neurons =", n_neurons)
@@ -706,5 +710,5 @@ if __name__ == "__main__":
             n_neurons,
             np.array(forward_times).mean(),
             np.array(backward_times).mean(),
-            memory,
+            np.array(forward_times).mean()+np.array(backward_times).mean()#memory,
         )
