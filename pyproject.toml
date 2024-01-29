@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [
   { name="Thomas Summe", email="tsumme@nd.edu" },
 ]
-description = "A small example package"
+description = "An SNN training package in JAX"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
@@ -18,7 +18,8 @@ dependencies = [
 "scikit-learn",
 "matplotlib",
 "jax",
-"randman @ git+https://git@github.com/fzenke/randman.git"
+"randman @ git+https://git@github.com/fzenke/randman.git",
+"torch"
 ]
 
 [project.urls]
