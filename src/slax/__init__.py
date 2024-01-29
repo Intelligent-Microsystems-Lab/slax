@@ -1,15 +1,13 @@
-from . import neurons
-from .neurons import LIF
-from . import custom_learning
-from .custom_learning import DenseOSTL
-from .randman_dataset import randman
-from .gen_ll import gen_loss_landscape
-from . import surrogates
-from .surrogates import fast_sigmoid, atan
+from .models.neurons import LIF, LTC
+from . import train
+from . import models
+from . import eval
+from .train.custom_learning import DenseOSTL, OTTT, DenseOTPE, RTRL
+from .eval.randman_dataset import randman
+from .eval.gen_ll import gen_loss_landscape
+from .models import surrogates
+from .models.surrogates import fast_sigmoid, atan, ActFun_adp
 from . import utils
-from .utils import train_online, train_online_deferred, train_offline, FPTT, compare_grads, recurrent
-
-def main():
-    print('slax')
-if __name__ == '__main__':
-    main()
+from .eval.utils import *
+from .train.utils import *
+from .models.utils import *

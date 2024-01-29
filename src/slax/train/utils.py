@@ -1,12 +1,9 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
-from typing import Any, Callable, Sequence
-from jax.tree_util import Partial, tree_leaves, tree_structure, tree_unflatten, tree_map
-from .neurons import LIF, LTC
-from jax.lax import stop_gradient as stop_grad
+from typing import Callable
+from jax.tree_util import tree_leaves, tree_map
 import optax
-from jax.flatten_util import ravel_pytree
 
 class train_online_deferred(nn.Module):
     '''
@@ -22,7 +19,7 @@ class train_online_deferred(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,carry,batch,opt_state):
+    def __call__(self,params,batch,opt_state):
         '''
         Args:
         params: Variable collection for snnModel
@@ -30,26 +27,30 @@ class train_online_deferred(nn.Module):
         batch: Tuple of the input and labels
         opt_state: Variable collection of the optimizer
         '''
+
         def loss_fn(params,state,batch):
-            state,s = self.snnModel.apply(params,state,batch[0])
+            params = {'params':params,'carry':state}
+            s,state_upd = self.snnModel.apply(params,batch[0],mutable='carry')
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,state)
+            return loss,(loss,s,state_upd)
 
         def one_step(carry,batch):
-            params,state,opt_state,grad = carry
-            g,(loss,s,state) = jax.jacrev(loss_fn,has_aux=True)(params,state,batch)
+            params,opt_state,grad = carry
+            g,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch)
             grad = tree_map(lambda x,y: x+y,g,grad)
-            return (params,state,opt_state,grad), (s,loss)
+            params.update(state_upd)
+            return (params,opt_state,grad), (s,loss)
         
-        def loop(p,state,batch,opt_state):
-            grad = tree_map(jnp.zeros_like,p)
-            (_,state,opt_state,grad),(s,loss) = jax.lax.scan(one_step,(p,state,opt_state,grad),batch)
+        def loop(p,batch,opt_state):
+            grad = tree_map(jnp.zeros_like,p['params'])
+            (p,opt_state,grad),(s,loss) = jax.lax.scan(one_step,(p,opt_state,grad),batch,unroll=jnp.iinfo(jnp.uint32).max)
             grad = tree_map(lambda x: x/batch[0].shape[1],grad)
             updates, opt_state = self.optimizer.update(grad,opt_state)
-            params = optax.apply_updates(p, updates)
-            return params,opt_state,s,loss,grad,state
+            p['params'] = optax.apply_updates(p['params'], updates)
+            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
+            return p,opt_state,s,loss,grad
         
-        return loop(params,carry,batch,opt_state)
+        return loop(params,batch,opt_state)
     
 class train_online(nn.Module):
     '''
@@ -65,7 +66,7 @@ class train_online(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,carry,batch,opt_state):
+    def __call__(self,params,batch,opt_state):
         '''
         Args:
         params: Variable collection for snnModel
@@ -75,22 +76,25 @@ class train_online(nn.Module):
         '''
 
         def loss_fn(params,state,batch):
-            state,s = self.snnModel.apply(params,state,batch[0])
+            params = {'params':params,'carry':state}
+            s,state_upd = self.snnModel.apply(params,batch[0],mutable='carry')
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,state)
+            return loss,(loss,s,state_upd)
 
         def one_step(carry,batch):
-            params,state,opt_state = carry
-            grad,(loss,s,state) = jax.jacrev(loss_fn,has_aux=True)(params,state,batch)
+            params,opt_state = carry
+            grad,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch)
             updates, opt_state = self.optimizer.update(grad,opt_state)
-            params = optax.apply_updates(params, updates)
-            return (params,state,opt_state), (s,loss)
+            params['params'] = optax.apply_updates(params['params'], updates)
+            params.update(state_upd)
+            return (params,opt_state), (s,loss)
         
-        def loop(p,state,batch,opt_state):
-            (params,state,opt_state),(s,loss) = jax.lax.scan(one_step,(p,state,opt_state),batch)
-            return params,opt_state,s,loss,state
+        def loop(p,batch,opt_state):
+            (p,opt_state),(s,loss) = jax.lax.scan(one_step,(p,opt_state),batch,unroll=jnp.iinfo(jnp.uint32).max)
+            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
+            return p,opt_state,s,loss
         
-        return loop(params,carry,batch,opt_state)
+        return loop(params,batch,opt_state)
     
 
 class FPTT(nn.Module):
@@ -119,6 +123,7 @@ class FPTT(nn.Module):
         batch: Tuple of the input and labels
         opt_state: Variable collection of the optimizer
         '''
+        
         def loss_fn(params,state,batch,lam,W_bar):
             state, s = self.snnModel.apply(params,state,batch[0])
             loss = jnp.mean(self.loss_fn(s,batch[1]))
@@ -161,7 +166,7 @@ class train_offline(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,carry,batch,opt_state):
+    def __call__(self,params,batch,opt_state):
         '''
         Args:
         params: Variable collection for snnModel
@@ -169,87 +174,21 @@ class train_offline(nn.Module):
         batch: Tuple of the input and labels
         opt_state: Variable collection of the optimizer
         '''
+        def apply(p,xs):
+            s,upd = self.snnModel.apply(p,xs,mutable='carry')
+            p.update(upd)
+            return p,s
         def loss_fn(params,state,batch):
-            p_apply = Partial(self.snnModel.apply,params)
-            state, s = jax.lax.scan(p_apply,state,batch[0])
+            p = {'params':params,'carry':state}
+            p,s = jax.lax.scan(apply,p,batch[0],unroll=jnp.iinfo(jnp.uint32).max)
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,state)
+            return loss,(loss,s,p)
             
-        def loop(p,state,batch,opt_state):
-            grad,(loss,s,state) = jax.jacrev(loss_fn,has_aux=True)(p,state,batch)
+        def loop(p,batch,opt_state):
+            grad,(loss,s,p) = jax.jacrev(loss_fn,has_aux=True)(p['params'],p['carry'],batch)
             updates, opt_state = self.optimizer.update(grad,opt_state)
-            params = optax.apply_updates(p, updates)
-            return params,opt_state,s,loss,grad,state
+            p['params'] = optax.apply_updates(p['params'], updates)
+            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
+            return p,opt_state,s,loss,grad
         
-        return loop(params,carry,batch,opt_state)
-    
-def layerwise_cosine_similarity(pytree_0,pytree_1):
-    '''
-    Computes the cosine similarity of each item between two pytrees with the same structure.
-
-    Args:
-        pytree_0: The first pytree with the same structure as pytree_1
-        pytree_1: The second pytree with the same structure as pytree_0
-    
-    Returns:
-        A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
-    '''
-    return tree_map(lambda x,y: optax.cosine_similarity(x.flatten(),y.flatten()),pytree_0,pytree_1)
-
-def global_cosine_similarity(pytree_0,pytree_1):
-    '''
-    Computes the cosine similarity of all elements between two pytrees. 
-
-    Args:
-        pytree_0: The first pytree
-        pytree_1: The second pytree
-    
-    Returns:
-        A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
-    '''
-    return optax.cosine_similarity(ravel_pytree(pytree_0)[0],ravel_pytree(pytree_1)[0])
-
-def compare_grads(train_func,reference_params,reference_grad,train_func_args,comparison_func=layerwise_cosine_similarity):
-    '''
-    Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using
-    a given training function and its arguments.
-
-    Args:
-        train_func: The returned function from calling `train_online_deffered` or a similar function with the same inputs
-        and outputs
-        reference_params: A pytree of the reference parameters
-        reference_grad: A pytree of the reference gradients
-        train_func_args: A tuple of the arguments for `train_func` (params,carry,batch,opt_state)
-        comparison_func: A function that takes in two pytrees and performs some comparison operation. Defaults to `layerwise_cosine_similarity'
-    
-    Returns:
-        The output of comparison_func
-    '''
-
-    params,carry,batch,opt_state = train_func_args
-    reference_params = tree_unflatten(tree_structure(params),tree_leaves(reference_params))
-    _,_,_,_,new_grad,_ = train_func(reference_params,carry,batch,opt_state)
-    reference_grad = tree_unflatten(tree_structure(new_grad),tree_leaves(reference_params))
-    return comparison_func(reference_grad,new_grad)
-
-def recurrent(chain,model_carry):
-    def execute(carry,x):
-        counter = 0
-        if model_carry == None:
-            for mdl in chain:
-                if 'v_threshold' in mdl.__annotations__.keys():
-                    carry[counter],x = mdl(carry[counter],x)
-                    counter += 1
-                else:
-                    x = mdl(x)
-            carry[counter-1]['rec'] = jnp.zeros_like(x)
-        else:
-            x = jnp.concatenate([x,carry[len(chain)-1]['rec']])
-            for mdl in chain:
-                if 'v_threshold' in mdl.__annotations__.keys():
-                    carry[counter],x = mdl(carry[counter],x)
-                    counter += 1
-                else:
-                    x = mdl(x)
-        return carry,x
-    return execute
+        return loop(params,batch,opt_state)

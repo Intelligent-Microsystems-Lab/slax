@@ -8,3 +8,4 @@ slax/.DS_Store/
 src/.DS_Store
 *.pyc
 perf_tests/data.csv
+.DS_Store

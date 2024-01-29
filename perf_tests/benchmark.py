@@ -450,46 +450,50 @@ def spyx_full():
             # print(x.shape)
             #x = x.transpose(1,0,2)
             x = hk.BatchApply(hk.Linear(n_neurons))(x)
+            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
+            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
 
-            core = hk.DeepRNN(
-                [
-                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
-                ]
-            )
-            spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
-            )
             x = hk.BatchApply(hk.Linear(n_neurons))(x)
+            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
+            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
 
-            core = hk.DeepRNN(
-                [
-                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
-                ]
-            )
-            spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
-            )
             x = hk.BatchApply(hk.Linear(n_neurons))(x)
+            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
+            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
 
-            core = hk.DeepRNN(
-                [
-                    snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
-                ]
-            )
-            spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
-            )
+
+            # x = hk.BatchApply(hk.Linear(n_neurons))(x)
+
+            # core = hk.DeepRNN(
+            #     [
+            #         snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
+            #     ]
+            # )
+            # spikes, V = hk.dynamic_unroll(
+            #     core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
+            # )
+            # x = hk.BatchApply(hk.Linear(n_neurons))(spikes)
+
+            # core = hk.DeepRNN(
+            #     [
+            #         snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
+            #     ]
+            # )
+            # spikes, V = hk.dynamic_unroll(
+            #     core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
+            # )
             # spikes, V = hk.static_unroll(
             #     core, x, core.initial_state(x.shape[1]), time_major=True#, unroll=5
             # )
             
 
-            return spikes, V
+            return x
 
         #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
-        input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
-
         key = jax.random.PRNGKey(0)
+        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
+
+        
         # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
         SNN = hk.without_apply_rng(hk.transform(Model))
         params = SNN.init(rng=key, x=input_static)
@@ -497,8 +501,9 @@ def spyx_full():
         @jax.jit
         def net_eval(weights, events):
             readout = SNN.apply(weights, events)
-            traces, V_f = readout
-            return traces.sum()
+            #traces, V_f = readout
+            #return traces.sum()
+            return readout.sum()
 
         model = (net_eval, params)
 
@@ -547,7 +552,7 @@ def spyx_half():
 
             # static unroll for maximum performance
             spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[0]), time_major=True, unroll=5
+                core, x, core.initial_state(x.shape[0]), time_major=False, unroll=5
             )
 
             return spikes, V
@@ -563,6 +568,7 @@ def spyx_half():
         def net_eval(weights, events):
             readout = SNN.apply(weights, events)
             traces, V_f = readout
+            print(V_f)
             return traces.sum()
 
         model = (net_eval, params)
@@ -590,6 +596,8 @@ def slax_full():
     import slax as sl
     import flax.linen as nn
 
+    key = jax.random.PRNGKey(0)
+
     benchmark_title = f"slax full-precision v{'0.0.1'}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
@@ -597,38 +605,48 @@ def slax_full():
             @nn.compact
             def __call__(self,x):
                 x = nn.Dense(n_neurons)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
+                x = nn.Dense(n_neurons)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
+                x = nn.Dense(n_neurons)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
+                #sl.connect([nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),])
 
-                carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
+                #carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
 
                 # static unroll for maximum performance
-                carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
+                # x = nn.Dense(n_neurons)(x)
+                # carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
+                # carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
+                
 
-                if n_layers >= 2:
-                    x = nn.Dense(n_neurons)(x)
-                    carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
-                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
+                # if n_layers >= 2:
+                #     x = nn.Dense(n_neurons)(x)
+                #     carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
+                #     carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
 
-                if n_layers >= 3:
-                    x = nn.Dense(n_neurons)(x)
-                    carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
-                    carry, spikes = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
+                # if n_layers >= 3:
+                #     x = nn.Dense(n_neurons)(x)
+                #     carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
+                #     carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
 
 
-                return spikes, carry
+                return x
 
-        input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
+        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
         #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
 
-        key = jax.random.PRNGKey(0)
+        
         # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
-        SNN = Model()
+        SNN = Model()#sl.RNN(sl.connect([nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),]))#Model()
         params = SNN.init(key, input_static)
 
         @jax.jit
         def net_eval(weights, events):
-            readout = SNN.apply(weights, events)
+            readout = SNN.apply(weights, events,mutable=['carry'])
             traces, V_f = readout
             return traces.sum()
+            #return readout[0].sum()
 
         model = (net_eval, params)
 
@@ -675,7 +693,7 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    device = "cuda"
+    device = "mps"
 
     for n_neurons in [
         1024,

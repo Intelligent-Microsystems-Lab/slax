@@ -1,7 +1,5 @@
 import jax
 import jax.numpy as jnp
-import flax.linen as nn
-from typing import Any, Callable, Sequence
 
 def fast_sigmoid(slope=25):
     '''
