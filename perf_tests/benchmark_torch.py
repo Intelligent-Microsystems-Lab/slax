@@ -448,7 +448,8 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    device = "cuda"
+    import torch_xla.core.xla_model as xm
+    device = xm.xla_device()#"cuda"
 
     for n_neurons in [
         1028,
