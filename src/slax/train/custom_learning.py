@@ -5,9 +5,9 @@ from typing import Any, Sequence
 from jax.tree_util import Partial, tree_leaves, tree_map
 from jax.lax import stop_gradient as stop_grad
 from jax.flatten_util import ravel_pytree
-from ..models.utils import reinit_model
+from ..models.utils import reinit_model, SNNCell
 
-class DenseOSTL(nn.Module):
+class DenseOSTL(SNNCell):
     '''
     An efficient implementation of Online Spatio-Temporal Learning (OSTL) from Bohnstingl, T., Woźniak, S., Pantazi, A., & Eleftheriou, E. (2022). Online spatio-temporal learning in deep neural networks. IEEE Transactions on Neural Networks and Learning Systems.
 
@@ -83,7 +83,7 @@ class DenseOSTL(nn.Module):
         return spikes
     
 
-class DenseOTPE(nn.Module):
+class DenseOTPE(SNNCell):
     '''
     An efficient implementation of Online Spatio-Temporal Learning (OSTL) from Bohnstingl, T., Woźniak, S., Pantazi, A., & Eleftheriou, E. (2022). Online spatio-temporal learning in deep neural networks. IEEE Transactions on Neural Networks and Learning Systems.
 
@@ -110,8 +110,8 @@ class DenseOTPE(nn.Module):
                     init = Partial(jax.tree_map,jnp.zeros_like)
                     E = self.variable('carry','E',init,{'params':self.variables['params']})
                     R_hat = self.variable('carry','R_hat',init,{'params':self.variables['params']})
-                    g_bar = self.variable('carry','E',init,{'params':self.variables['params']})
-                    ratio = self.variable('carry','E',jnp.zeros,1)
+                    g_bar = self.variable('carry','g_bar',jnp.zeros_like,x)
+                    ratio = self.variable('carry','ratio',jnp.zeros,1)
                 
                 return x
 
@@ -156,7 +156,7 @@ class DenseOTPE(nn.Module):
             r = ratio + 1
             ratio = (ratio/r)
 
-            g_bar = ratio*g_bar + (1-ratio)*ds_du
+            g_bar = ratio*g_bar + (1-ratio)*ds_du/self.leak
 
             carry['carry']['E'] = E
             carry['carry']['R_hat'] = R_hat
@@ -165,12 +165,12 @@ class DenseOTPE(nn.Module):
 
             chain.variables.update(carry)
 
-            return spikes,(R_hat,k)
+            return spikes,(R_hat,k,g_bar)
         
         def f_bwd(res,g):
-            R_hat,k = res
+            R_hat,k,g_bar = res
             grads = jax.tree_map(lambda x: g*x,R_hat)
-            return {'params': grads['params']},g.dot(k)
+            return {'params': grads['params']},(g*g_bar).dot(k)
 
         f_custom = nn.custom_vjp(f,f_fwd,f_bwd)
         chain = model()
@@ -187,21 +187,29 @@ class OTTT(nn.Module):
     leak: float
 
     @nn.compact
-    def __call__(self,carry,x):
-        model = self.chain
-        class chain(nn.Module):
+    def __call__(self,x):
+        mdl = self.chain
+        class model(nn.Module):
             @nn.compact
-            def __call__(self,carry,x):
-                for m in model:
-                    x=m()(carry,x)
+            def __call__(self,x):
+                in_size = x.shape
+                for m in mdl[:-1]:
+                    x=reinit_model(m)(x)
+                x = reinit_model(mdl[-1])(x)
+
+                if self.is_initializing():
+                    #init = Partial(jax.tree_map,jnp.zeros_like)
+                    a_hat = self.variable('carry','a_hat',jnp.zeros,in_size)
+                
                 return x
 
-        def f(chain,carry,x):
-            carry['chain'],x = chain(carry['chain'],x)
-            return carry,x
-
-        def summed_output(p,chain,carry,x):
-            carry,spikes = chain.apply(p,carry,x)
+        def f(chain,x):
+            x = chain(x)
+            return x
+        
+        def summed_output(chain,p,carry,x):
+            p.update(carry)
+            spikes,carry = chain.apply(p,x,mutable='carry')
             return (jnp.sum(spikes),spikes),(carry,spikes)
         
         def fast_update(g,a_hat,params):
@@ -210,39 +218,39 @@ class OTTT(nn.Module):
             else:
                 return jnp.outer(a_hat.flatten(),g.flatten())
 
-        def f_fwd(chain,carry,x):
-            ((ds_du_prev,_),(_,k)),(carry['chain'],spikes) = jax.jacrev(summed_output,has_aux=True,argnums=(2,3))(chain.variables,chain,carry['chain'],x)
-            carry['a_hat'] = carry['a_hat']*self.leak + x
+        def f_fwd(chain,x):
+            variables = stop_grad(chain.variables)
+            p = {'params': variables['params']}
+            carry = {'carry': variables['carry']}
+            a_hat = variables['carry']['a_hat']
+            del carry['carry']['a_hat']
+
+            ((ds_du_prev,_),(_,k)),(carry,spikes) = jax.jacrev(summed_output,has_aux=True,argnums=(2,3))(chain,p,carry,x)
+
+            #((ds_du_prev,_),(_,k)),(carry['chain'],spikes) = jax.jacrev(summed_output,has_aux=True,argnums=(2,3))(chain.variables,chain,carry['chain'],x)
+            a_hat = a_hat*self.leak + x
             p = jax.lax.stop_gradient({'params':chain.variables['params']})
             ds_du = ravel_pytree(ds_du_prev)[0]/self.leak
+            carry['carry']['a_hat'] = a_hat
+            chain.variables.update(carry)
 
-            return (carry,spikes),(carry['a_hat'],k,ds_du,p)
+            return spikes,(a_hat,k,ds_du)
         
         def f_bwd(res,g):
-            a_hat,k,ds_du,p = res
-            p_update = Partial(fast_update,g[1]*ds_du,a_hat)
-            grads = tree_map(p_update,p)#jax.tree_map(lambda x: g[1]*x,ds_dtheta)
-            return {'params': grads['params']},None,g[1].dot(k)
+            a_hat,k,ds_du = res
+            p_update = Partial(fast_update,g*ds_du,a_hat)
+            grads = tree_map(p_update,chain.variables['params'])#jax.tree_map(lambda x: g[1]*x,ds_dtheta)
+            return {'params': grads},g.dot(k)
+
 
         f_custom = nn.custom_vjp(f,f_fwd,f_bwd)
+        chain = model()
 
-        m = chain()
-        wait=0
-        if carry==None:
-            wait = 1
-            carry = {'chain': None}
         if len(x.shape)>1:
-            pf = Partial(f_custom,m)
-            carry,spikes = jax.vmap(pf)(carry,x)
+            spikes = nn.vmap(f_custom,variable_axes={'params':None,'carry':0},split_rngs={'params':False})(chain,x)
         else:
-            carry,spikes = f_custom(m,carry,x)
-        if wait==1:
-            if len(x.shape)>1:
-                sz = lambda var: jnp.stack([jnp.zeros_like(var)]*x.shape[0],axis=0)
-            else:
-                sz = jnp.zeros_like
-            carry['a_hat'] = jnp.zeros_like(x)
-        return carry,spikes
+            spikes = f_custom(chain,x)
+        return spikes
 
 class RTRL(nn.Module):
     '''
@@ -267,8 +275,8 @@ class RTRL(nn.Module):
                 x = reinit_model(mdl[-1])(x)
 
                 if self.is_initializing():
-                    init = Partial(jax.tree_map,jnp.zeros_like)
-                    E = self.variable('carry','E',init,{'params':self.variables['params']})
+                    #init = Partial(jax.tree_map,lambda vars: jnp.stack([jnp.zeros_like(vars)]*x.size,axis=0))
+                    E = self.variable('carry','E',jnp.zeros,(ravel_pytree(self.variables['carry'])[0].size,ravel_pytree(self.variables['params'])[0].size))
                 
                 return x
 
@@ -276,26 +284,27 @@ class RTRL(nn.Module):
             x = chain(x)
             return x
         
-        def output(chain,p,carry,x):
+        def output(chain,p,carry,x,unravel_p,unravel_carry):
+            p = unravel_p(p)
+            carry = unravel_carry(carry)
             p.update(carry)
             spikes,carry = chain.apply(p,x,mutable='carry')
-            return (spikes,tree_leaves(carry)[0]),(carry,spikes)
+            return (spikes,ravel_pytree(carry)[0]),(carry,spikes)
 
         def f_fwd(chain,x):
             variables = stop_grad(chain.variables)
-            p = {'params': variables['params']}
-            carry = {'carry': variables['carry']}
+            p,unravel_p = ravel_pytree({'params': variables['params']})
+            
             E = variables['carry']['E']
+            carry = {'carry': variables['carry']}
             del carry['carry']['E']
+            carry,unravel_carry = ravel_pytree(carry)
 
-            ((ds_dp,ds_du,k),(du_dp,du_du,_)),(carry,spikes) = jax.jacrev(output,has_aux=True,argnums=(1,2,3))(chain,p,carry,x)
+            ((ds_dp,ds_du,k),(du_dp,du_du,_)),(carry,spikes) = jax.jacrev(output,has_aux=True,argnums=(1,2,3))(chain,p,carry,x,unravel_p,unravel_carry)
 
-            ds_du = tree_leaves(ds_du)[0]
             ds_dparams = ds_dp
 
-            du_du = tree_leaves(du_du)[0]
             du_dparams = du_dp
-
             ds_dtheta = jax.tree_map(lambda x,y: ds_du.dot(x) + y, E, ds_dparams)
             E = jax.tree_map(lambda x,y: du_du.dot(x) + y, E, du_dparams)
 
@@ -306,11 +315,15 @@ class RTRL(nn.Module):
         
         def f_bwd(res,g):
             ds_dtheta,k = res
-            grads = jax.tree_map(lambda x: g*x,ds_dtheta)
-            return {'params': grads['params']},g.dot(k)
+            grads = unravel_params(g.dot(ds_dtheta))
+            return {'params': grads},g.dot(k)
 
         f_custom = nn.custom_vjp(f,f_fwd,f_bwd)
         chain = model()
+
+        if not self.is_initializing():
+            unravel_params = ravel_pytree(chain.variables['params'])[1]
+
 
         if len(x.shape)>1:
             spikes = nn.vmap(f_custom,variable_axes={'params':None,'carry':0},split_rngs={'params':False})(chain,x)

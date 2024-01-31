@@ -41,7 +41,7 @@ def atan(alpha=2.):
     
     return arctangent
 
-gamma = 1.#.5  # gradient scale
+gamma = .5  # gradient scale
 lens = 0.3
 
 def gaussian(x, mu=0., sigma=.5):
@@ -55,13 +55,13 @@ def ActFun_adp():
     def backward(primal, tangent):  # approximate the gradients
         input, = primal
         grad_input, = tangent
-        # temp = abs(input) < lens
+
         scale = 6.0
         hight = .15
-        # temp = torch.exp(-(input**2)/(2*lens**2))/torch.sqrt(2*torch.tensor(math.pi))/lens
+
         temp = gaussian(input, mu=0., sigma=lens) * (1. + hight) \
                - gaussian(input, mu=lens, sigma=scale * lens) * hight \
                - gaussian(input, mu=-lens, sigma=scale * lens) * hight
-        # temp =  gaussian(input, mu=0., sigma=lens)
+
         return (forward(input),grad_input * temp * gamma)
     return forward

@@ -4,10 +4,6 @@ import argparse
 import numpy as np
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
-
-
 def rockpool_torch():
     import torch
 
@@ -25,11 +21,11 @@ def rockpool_torch():
         # ).to(device)
         model = Sequential(
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons),
+            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons),
+            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons),
+            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
         ).to(device)
         input_static = torch.randn(batch_size, n_steps, n_neurons).to(device)
         with torch.no_grad():
@@ -48,7 +44,6 @@ def rockpool_torch():
         loss.backward(retain_graph=True)
 
     return prepare_fn, forward_fn, backward_fn, benchmark_title
-
 
 def rockpool_exodus():
     import torch
@@ -192,7 +187,6 @@ def norse():
             nn.Linear(n_neurons, n_neurons),
             LIF(),
         )
-        model = torch.compile(model, mode="max-autotune")
         model = model.to(device)
         input_static = torch.randn(n_steps, batch_size, n_neurons).to(device)
         with torch.no_grad():
@@ -429,242 +423,6 @@ def lava():
     return prepare_fn, forward_fn, backward_fn, benchmark_title
 
 
-def spyx_full():
-    #os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".3"
-    import spyx
-    import spyx.nn as snn
-    import jax
-    import jax.numpy as jnp
-    import jmp
-    import haiku as hk
-
-    # policy = jmp.get_policy("full")
-
-    # hk.mixed_precision.set_policy(hk.Linear, policy)
-    # hk.mixed_precision.set_policy(snn.LIF, policy)
-
-    benchmark_title = f"Spyx full-precision v{spyx.__version__}"
-
-    def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
-        def Model(x):
-            # print(x.shape)
-            #x = x.transpose(1,0,2)
-            x = hk.BatchApply(hk.Linear(n_neurons))(x)
-            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
-            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
-
-            x = hk.BatchApply(hk.Linear(n_neurons))(x)
-            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
-            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
-
-            x = hk.BatchApply(hk.Linear(n_neurons))(x)
-            core = hk.DeepRNN([snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),])
-            x, V = hk.dynamic_unroll(core, x, core.initial_state(x.shape[1]), time_major=True, unroll=5)#jnp.iinfo(jnp.uint32).max)
-
-
-            # x = hk.BatchApply(hk.Linear(n_neurons))(x)
-
-            # core = hk.DeepRNN(
-            #     [
-            #         snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
-            #     ]
-            # )
-            # spikes, V = hk.dynamic_unroll(
-            #     core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
-            # )
-            # x = hk.BatchApply(hk.Linear(n_neurons))(spikes)
-
-            # core = hk.DeepRNN(
-            #     [
-            #         snn.LIF((n_neurons,),beta=0.5, activation=spyx.axn.Axon(spyx.axn.arctan())),
-            #     ]
-            # )
-            # spikes, V = hk.dynamic_unroll(
-            #     core, x, core.initial_state(x.shape[1]), time_major=True, unroll=n_steps*1000
-            # )
-            # spikes, V = hk.static_unroll(
-            #     core, x, core.initial_state(x.shape[1]), time_major=True#, unroll=5
-            # )
-            
-
-            return x
-
-        #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
-        key = jax.random.PRNGKey(0)
-        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
-
-        
-        # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
-        SNN = hk.without_apply_rng(hk.transform(Model))
-        params = SNN.init(rng=key, x=input_static)
-
-        @jax.jit
-        def net_eval(weights, events):
-            readout = SNN.apply(weights, events)
-            #traces, V_f = readout
-            #return traces.sum()
-            return readout.sum()
-
-        model = (net_eval, params)
-
-        return dict(model=model, input=input_static, n_neurons=n_neurons)
-
-    def forward_fn(bench_dict):
-        model, input_static = bench_dict["model"], bench_dict["input"]
-        net_eval, params = model
-        net_eval(params, input_static)
-        bench_dict["output"] = input_static
-        return bench_dict
-
-    def backward_fn(bench_dict):
-        input_static = bench_dict["input"]
-        net_eval, params = bench_dict["model"]
-        jax.grad(net_eval)(params, input_static)
-
-    return prepare_fn, forward_fn, backward_fn, benchmark_title
-
-
-def spyx_half():
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".3"
-    import spyx
-    import spyx.nn as snn
-    import jax
-    import jax.numpy as jnp
-    import jmp
-    import haiku as hk
-
-    policy = jmp.get_policy("half")
-
-    hk.mixed_precision.set_policy(hk.Linear, policy)
-    hk.mixed_precision.set_policy(snn.LIF, policy)
-
-    benchmark_title = f"Spyx half-precision v{spyx.__version__}"
-
-    def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
-        def Model(x):
-            x = hk.BatchApply(hk.Linear(n_neurons, with_bias=False))(x)
-
-            core = hk.DeepRNN(
-                [
-                    snn.LIF((n_neurons,), activation=spyx.axn.Axon(spyx.axn.arctan())),
-                ]
-            )
-
-            # static unroll for maximum performance
-            spikes, V = hk.dynamic_unroll(
-                core, x, core.initial_state(x.shape[0]), time_major=False, unroll=5
-            )
-
-            return spikes, V
-
-        input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.uint8)
-
-        key = jax.random.PRNGKey(0)
-        # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
-        SNN = hk.without_apply_rng(hk.transform(Model))
-        params = SNN.init(rng=key, x=input_static)
-
-        @jax.jit
-        def net_eval(weights, events):
-            readout = SNN.apply(weights, events)
-            traces, V_f = readout
-            print(V_f)
-            return traces.sum()
-
-        model = (net_eval, params)
-
-        return dict(model=model, input=input_static, n_neurons=n_neurons)
-
-    def forward_fn(bench_dict):
-        model, input_static = bench_dict["model"], bench_dict["input"]
-        net_eval, params = model
-        net_eval(params, input_static)
-        bench_dict["output"] = input_static
-        return bench_dict
-
-    def backward_fn(bench_dict):
-        input_static = bench_dict["input"]
-        net_eval, params = bench_dict["model"]
-        jax.grad(net_eval)(params, input_static)
-
-    return prepare_fn, forward_fn, backward_fn, benchmark_title
-
-def slax_full():
-    #os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".3"
-    import jax
-    import jax.numpy as jnp
-    import slax as sl
-    import flax.linen as nn
-
-    key = jax.random.PRNGKey(0)
-
-    benchmark_title = f"slax full-precision v{'0.0.1'}"
-
-    def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
-        class Model(nn.Module):
-            @nn.compact
-            def __call__(self,x):
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
-                #sl.connect([nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),])
-
-                #carry = sl.LIF(0.5).initialize_carry(x.shape[1:])
-
-                # static unroll for maximum performance
-                # x = nn.Dense(n_neurons)(x)
-                # carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
-                # carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
-                
-
-                # if n_layers >= 2:
-                #     x = nn.Dense(n_neurons)(x)
-                #     carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
-                #     carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
-
-                # if n_layers >= 3:
-                #     x = nn.Dense(n_neurons)(x)
-                #     carry = sl.LIF(0.5).initialize_carry(key,x.shape[1:])
-                #     carry, x = nn.scan(sl.LIF,variable_broadcast='params',split_rngs={'params':False},unroll=2_147_483_647)(2.,spike_fn=sl.atan())(carry,x)
-
-
-                return x
-
-        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
-        #input_static = jnp.ones(shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
-
-        
-        # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
-        SNN = Model()#sl.RNN(sl.connect([nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),nn.Dense(n_neurons),sl.LIF(2.),]))#Model()
-        params = SNN.init(key, input_static)
-
-        @jax.jit
-        def net_eval(weights, events):
-            readout = SNN.apply(weights, events,mutable=['carry'])
-            traces, V_f = readout
-            return traces.sum()
-            #return readout[0].sum()
-
-        model = (net_eval, params)
-
-        return dict(model=model, input=input_static, n_neurons=n_neurons)
-
-    def forward_fn(bench_dict):
-        model, input_static = bench_dict["model"], bench_dict["input"]
-        net_eval, params = model
-        net_eval(params, input_static)
-        bench_dict["output"] = input_static
-        return bench_dict
-
-    def backward_fn(bench_dict):
-        input_static = bench_dict["input"]
-        net_eval, params = bench_dict["model"]
-        jax.grad(net_eval)(params, input_static)
-
-    return prepare_fn, forward_fn, backward_fn, benchmark_title
 
 
 benchmarks = {
@@ -677,9 +435,6 @@ benchmarks = {
     "spikingjelly": spikingjelly,
     "spikingjelly_cupy": spikingjelly_cupy,
     "lava": lava,
-    "spyx_full": spyx_full,
-    "spyx_half": spyx_half,
-    "slax_full": slax_full,
 }
 
 if __name__ == "__main__":
@@ -696,7 +451,7 @@ if __name__ == "__main__":
     device = "mps"
 
     for n_neurons in [
-        1024,
+        1028,
         2048,
         4096,
         4096 + 2048,
@@ -727,6 +482,6 @@ if __name__ == "__main__":
             bench_desc,
             n_neurons,
             np.array(forward_times).mean(),
-            np.array(backward_times).mean(),
-            np.array(forward_times).mean()+np.array(backward_times).mean()#memory,
+            np.mean(np.array(forward_times)+np.array(backward_times)),
+            np.std(np.array(forward_times)+np.array(backward_times))#memory,
         )

@@ -23,5 +23,5 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/pypa/sampleproject"
-Issues = "https://github.com/pypa/sampleproject/issues"
+Homepage = "https://github.com/Intelligent-Microsystems-Lab/slax"
+Issues = "https://github.com/Intelligent-Microsystems-Lab/slax/issues"

@@ -12,8 +12,8 @@ def log_result(framework, neurons, forward, backward, memory):
 
 def timeit(
     callable: Callable,
-    min_runs: int = 3,
-    max_runs: int = 5000,
+    min_runs: int = 20,
+    max_runs: int = 20,
     min_time: float = 2.0,
     warmup_calls: int = 1,
 ) -> List[float]:
@@ -26,8 +26,10 @@ def timeit(
     exec_count = 0
     t_total = 0.0
     collected_times = []
-    while ((t_total <= min_time) or (exec_count < min_runs)) and (
-        exec_count < max_runs
+    #while ((t_total <= min_time) or (exec_count < min_runs)) and (
+    #    exec_count < max_runs
+    while (exec_count < min_runs) and (
+       exec_count < max_runs
     ):
         # - Time a single run
         t_start = time()
@@ -64,6 +66,8 @@ def benchmark_framework(
             device=device
         )
 
+        forward_fn(bench_dict)
+        backward_fn(bench_dict)
         # - Forward pass
         forward_times.append(timeit(lambda: forward_fn(bench_dict)))
         bench_dict = forward_fn(bench_dict)

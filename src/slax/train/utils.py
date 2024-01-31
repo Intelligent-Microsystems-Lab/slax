@@ -115,7 +115,7 @@ class FPTT(nn.Module):
     optimizer: Callable
     alpha: float = 0.5
 
-    def __call__(self,params,carry,batch,opt_state):
+    def __call__(self,params,batch,opt_state):
         '''
         Args:
         params: Variable collection for snnModel
@@ -125,30 +125,32 @@ class FPTT(nn.Module):
         '''
         
         def loss_fn(params,state,batch,lam,W_bar):
-            state, s = self.snnModel.apply(params,state,batch[0])
+            p = {'params':params,'carry':state}
+            s,state_upd = self.snnModel.apply(p,batch[0],mutable='carry')
             loss = jnp.mean(self.loss_fn(s,batch[1]))
             combine = lambda x,y,z: jnp.sum(jnp.square(x - y - (0.5/self.alpha)*z))
             
-            loss = loss + (0.5*self.alpha)*jnp.sum(jnp.array(tree_leaves(tree_map(combine,{'params':params['params']},W_bar,lam))))
+            loss = loss + (0.5*self.alpha)*jnp.sum(jnp.array(tree_leaves(tree_map(combine,params,W_bar,lam))))
             #jnp.sum(ravel_pytree(tree_map(combine,{'params':params['params']},W_bar,lam))[0])
-            return loss,(loss,s,state)
+            return loss,(loss,s,state_upd)
 
         def one_step(carry,batch):
-            params,state,opt_state,lam,W_bar = carry
-            grad,(loss,s,state) = jax.jacrev(loss_fn,has_aux=True)(params,state,batch,lam,W_bar)
+            params,opt_state,lam,W_bar = carry
+            grad,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch,lam,W_bar)
             updates, opt_state = self.optimizer.update(grad,opt_state)
-            params = optax.apply_updates(params, updates)
-            lam = tree_map(lambda x,y,z: z - self.alpha*(x-y),params,W_bar,lam) # check if this should be updated params in one_step or original params from __call__
-            W_bar = tree_map(lambda x,y,z: 0.5*(x+y) - (0.5/self.alpha)*z,W_bar,params,lam)
-            return (params,state,opt_state,lam,W_bar), (s,loss)
+            params['params'] = optax.apply_updates(params['params'], updates)
+            lam = tree_map(lambda x,y,z: z - self.alpha*(x-y),params['params'],W_bar,lam) # check if this should be updated params in one_step or original params from __call__
+            W_bar = tree_map(lambda x,y,z: 0.5*(x+y) - (0.5/self.alpha)*z,W_bar,params['params'],lam)
+            params.update(state_upd)
+            return (params,opt_state,lam,W_bar), (s,loss)
         
-        def loop(p,state,batch,opt_state):
-            lam = tree_map(jnp.zeros_like,p)
-            W_bar = p
-            (p_update,state,opt_state,lam,W_bar),(s,loss) = jax.lax.scan(one_step,(p,state,opt_state,lam,W_bar),batch)
-            return p_update,opt_state,s,loss,state
+        def loop(p,batch,opt_state):
+            lam = tree_map(jnp.zeros_like,p['params'])
+            W_bar = p['params']
+            (p_update,opt_state,lam,W_bar),(s,loss) = jax.lax.scan(one_step,(p,opt_state,lam,W_bar),batch,unroll=jnp.iinfo(jnp.uint32).max)
+            return p_update,opt_state,s,loss
         
-        return loop(params,carry,batch,opt_state)
+        return loop(params,batch,opt_state)
     
 
 
