@@ -21,11 +21,11 @@ def rockpool_torch():
         # ).to(device)
         model = Sequential(
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFTorch(n_neurons,max_spikes_per_dt=1),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFTorch(n_neurons,max_spikes_per_dt=1),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFTorch(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFTorch(n_neurons,max_spikes_per_dt=1),
         ).to(device)
         input_static = torch.randn(batch_size, n_steps, n_neurons).to(device)
         with torch.no_grad():
@@ -62,11 +62,11 @@ def rockpool_exodus():
         # ).to(device)
         model = Sequential(
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFExodus(n_neurons),
+            LIFExodus(n_neurons,max_spikes_per_dt=1),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFExodus(n_neurons),
+            LIFExodus(n_neurons,max_spikes_per_dt=1),
             LinearTorch(shape=(n_neurons, n_neurons)),
-            LIFExodus(n_neurons),
+            LIFExodus(n_neurons,max_spikes_per_dt=1),
         ).to(device)
         input_static = torch.randn(batch_size, n_steps, n_neurons).to(device)
         with torch.no_grad():
@@ -448,7 +448,7 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    device = "mps"
+    device = "cuda"
 
     for n_neurons in [
         1028,

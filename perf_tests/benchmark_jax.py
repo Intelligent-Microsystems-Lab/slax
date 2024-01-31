@@ -25,11 +25,11 @@ def rockpool_jax():
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         SNN = Sequential(
             LinearJax(shape=(n_neurons, n_neurons)),
-            LIFJax(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFJax(n_neurons,max_spikes_per_dt=1),
             LinearJax(shape=(n_neurons, n_neurons)),
-            LIFJax(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFJax(n_neurons,max_spikes_per_dt=1),
             LinearJax(shape=(n_neurons, n_neurons)),
-            LIFJax(n_neurons,spiking_output=True,max_spikes_per_dt=True),
+            LIFJax(n_neurons,max_spikes_per_dt=1),
         )
 
         input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
