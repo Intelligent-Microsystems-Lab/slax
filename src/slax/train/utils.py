@@ -19,7 +19,7 @@ class train_online_deferred(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,batch,opt_state):
+    def __call__(self,params,batch,opt_state,return_grad=False):
         '''
         Args:
         params: Variable collection for snnModel
@@ -48,7 +48,10 @@ class train_online_deferred(nn.Module):
             updates, opt_state = self.optimizer.update(grad,opt_state)
             p['params'] = optax.apply_updates(p['params'], updates)
             p['carry'] = tree_map(jnp.zeros_like,p['carry'])
-            return p,opt_state,s,loss,grad
+            if return_grad:
+                return p,opt_state,s,loss,grad
+            else:
+                return p,opt_state,s,loss
         
         return loop(params,batch,opt_state)
     
@@ -168,7 +171,7 @@ class train_offline(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,batch,opt_state):
+    def __call__(self,params,batch,opt_state,return_grad=False):
         '''
         Args:
         params: Variable collection for snnModel
@@ -191,6 +194,9 @@ class train_offline(nn.Module):
             updates, opt_state = self.optimizer.update(grad,opt_state)
             p['params'] = optax.apply_updates(p['params'], updates)
             p['carry'] = tree_map(jnp.zeros_like,p['carry'])
-            return p,opt_state,s,loss,grad
+            if return_grad:
+                return p,opt_state,s,loss,grad
+            else:
+                return p,opt_state,s,loss
         
         return loop(params,batch,opt_state)
