@@ -9,3 +9,5 @@ src/.DS_Store
 *.pyc
 perf_tests/data.csv
 .DS_Store
+*.png
+*.csv
