@@ -247,9 +247,9 @@ def snntorch():
                     output.append(spk)
                 return torch.stack(output)
 
-        model = Model()
+        model = Model().to(device)
         #model = torch.compile(model, mode="max-autotune")
-        model = model.to(device)
+        #model = torch.compile(model,backend='openxla')
         input_static = torch.randn(n_steps, batch_size, n_neurons).to(device)
         with torch.no_grad():
             model(input_static)
@@ -281,7 +281,7 @@ def spikingjelly():
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         class Model(nn.Module):
-            def __init__(self, tau=5.0):
+            def __init__(self, tau=2.0):
                 super().__init__()
                 # self.model = nn.Sequential(
                 #     layer.Linear(n_neurons, n_neurons),
@@ -448,8 +448,8 @@ if __name__ == "__main__":
     batch_size = int(args.batch_size)
     n_steps = 500
     n_layers = 3  # doesn't do anything at the moment
-    import torch_xla.core.xla_model as xm
-    device = xm.xla_device()#"cuda"
+    #import torch_xla.core.xla_model as xm
+    device = 'mps'#xm.xla_device()#"cuda"
 
     for n_neurons in [
         1028,

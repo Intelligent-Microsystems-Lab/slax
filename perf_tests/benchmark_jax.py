@@ -184,7 +184,7 @@ def slax_full():
 
     return prepare_fn, forward_fn, backward_fn, benchmark_title
 
-
+def slax_flax():
     import jax
     import jax.numpy as jnp
     import slax as sl
@@ -192,18 +192,18 @@ def slax_full():
 
     key = jax.random.PRNGKey(0)
 
-    benchmark_title = f"slax full-precision v{'0.0.1'}"
+    benchmark_title = f"slax flax v{'0.0.1'}"
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         class Model(nn.Module):
             @nn.compact
             def __call__(self,x):
                 x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=5)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
                 x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=5)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
                 x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=5)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
 
                 return x
 
@@ -215,8 +215,8 @@ def slax_full():
 
         @jax.jit
         def net_eval(weights, events):
-            readout = SNN.apply(weights, events,mutable=['carry'])
-            traces, V_f = readout
+            readout = SNN.apply(weights, events)
+            traces = readout
             return traces.sum()
             #return readout[0].sum()
 
@@ -244,6 +244,7 @@ benchmarks = {
     "spyx_full": spyx_full,
     "slax_full": slax_full,
     "rockpool_jax": rockpool_jax,
+    "slax_flax": slax_flax,
 }
 
 if __name__ == "__main__":
