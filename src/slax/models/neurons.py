@@ -2,10 +2,10 @@ import jax
 import jax.numpy as jnp
 import flax.linen as nn
 from typing import Any, Callable
-from .surrogates import fast_sigmoid, ActFun_adp
-from .utils import SNNCell, reinit_model
+from .surrogates import fast_sigmoid, multi_gauss
+from .utils import SNNCell, reinit_model, Neuron
 
-class LIF(SNNCell):
+class LIF(Neuron):
     '''
     A module for the Leaky Integrate-and-Fire neuron.
     
@@ -64,9 +64,21 @@ class LIF(SNNCell):
             carry['Vmem'] = vmem
             return carry, spikes
 
-class LTC(SNNCell):
-    connection_fn: Callable
-    spike_fn: Callable = ActFun_adp()
+class LTC(Neuron):
+    '''
+    A module for the Liquid Time Constant neuron from Yin, B., Corradi, F., & Bohté, S. M. (2023). Accurate online training of dynamical spiking neural networks through forward propagation through time. Nature Machine Intelligence, 5(5), 518-527.
+    
+    Args:
+    spike_fn: The surrogate spike function, such as fast sigmoid, used in place Heaviside step function. Defaults to `multi_gauss`
+    v_reset: If the neuron uses a hard reset rather than subtraction-based reset after a spike, the membrane potential returns
+    to this value. Defaults to 0.0
+    is_recurrent: Whether or not to apply layer-wise recurrence. Defaults to True
+    subtraction_reset: Whether the neuron subtracts "1." from the membrane potential after a spike or resets to v_reset.
+    Defaults to False
+    dtype: Data type of the membrane potential. This only matters if you use "initialize_carry". Defaults to float32
+    '''
+    connection_fn: Callable = None
+    spike_fn: Callable = multi_gauss()
     v_reset: float = 0.0
     is_recurrent: bool = True
     subtraction_reset: bool = False
@@ -94,7 +106,9 @@ class LTC(SNNCell):
             hidden_carry = False
 
         if self.connection_fn == None:
-            cf = nn.Dense(x.shape)
+            cf = nn.Dense(x.shape[-1])
+        else:
+            cf = self.connection_fn
 
         if self.is_recurrent:
             tauM1 = nn.sigmoid(reinit_model(cf)(x) + reinit_model(cf)(spk_t) + reinit_model(cf)(vmem))

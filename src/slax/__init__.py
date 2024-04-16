@@ -6,7 +6,7 @@ from .train.custom_learning import DenseOSTL, OTTT, DenseOTPE, RTRL
 from .eval.randman_dataset import randman
 from .eval.gen_ll import gen_loss_landscape
 from .models import surrogates
-from .models.surrogates import fast_sigmoid, atan, ActFun_adp
+from .models.surrogates import *
 from .eval.utils import *
 from .train.utils import *
 from .models.utils import *

@@ -4,6 +4,7 @@ import flax.linen as nn
 from typing import Callable
 from jax.tree_util import tree_leaves, tree_map
 import optax
+from ..models.utils import reinit_model, SNNCell
 
 class train_online_deferred(nn.Module):
     '''
@@ -118,7 +119,7 @@ class FPTT(nn.Module):
     optimizer: Callable
     alpha: float = 0.5
 
-    def __call__(self,params,batch,opt_state):
+    def __call__(self,params,batch,opt_state,unroll=jnp.iinfo(jnp.uint32).max):
         '''
         Args:
         params: Variable collection for snnModel
@@ -131,9 +132,11 @@ class FPTT(nn.Module):
             p = {'params':params,'carry':state}
             s,state_upd = self.snnModel.apply(p,batch[0],mutable='carry')
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            combine = lambda x,y,z: jnp.sum(jnp.square(x - y - (0.5/self.alpha)*z))
+            #combine = lambda x,y,z: jnp.sum(jnp.square(x - y - (0.5/self.alpha)*z))
+            combine = lambda x,y,z: x - y - (0.5/self.alpha)*z
             
-            loss = loss + (0.5*self.alpha)*jnp.sum(jnp.array(tree_leaves(tree_map(combine,params,W_bar,lam))))
+            #loss = loss + (0.5*self.alpha)*jnp.sum(jnp.array(tree_leaves(tree_map(combine,params,W_bar,lam))))
+            loss = loss + (0.5*self.alpha)*optax.tree_utils.tree_l2_norm(tree_map(combine,params,W_bar,lam),squared=True)
             #jnp.sum(ravel_pytree(tree_map(combine,{'params':params['params']},W_bar,lam))[0])
             return loss,(loss,s,state_upd)
 
@@ -150,7 +153,8 @@ class FPTT(nn.Module):
         def loop(p,batch,opt_state):
             lam = tree_map(jnp.zeros_like,p['params'])
             W_bar = p['params']
-            (p_update,opt_state,lam,W_bar),(s,loss) = jax.lax.scan(one_step,(p,opt_state,lam,W_bar),batch,unroll=jnp.iinfo(jnp.uint32).max)
+            (p_update,opt_state,lam,W_bar),(s,loss) = jax.lax.scan(one_step,(p,opt_state,lam,W_bar),batch,unroll=unroll)
+            p_update['carry'] = tree_map(jnp.zeros_like,p_update['carry'])
             return p_update,opt_state,s,loss
         
         return loop(params,batch,opt_state)
@@ -171,7 +175,7 @@ class train_offline(nn.Module):
     loss_fn: Callable
     optimizer: Callable
 
-    def __call__(self,params,batch,opt_state,return_grad=False):
+    def __call__(self,params,batch,opt_state,return_grad=False,unroll=jnp.iinfo(jnp.uint32).max):
         '''
         Args:
         params: Variable collection for snnModel
@@ -185,7 +189,7 @@ class train_offline(nn.Module):
             return p,s
         def loss_fn(params,state,batch):
             p = {'params':params,'carry':state}
-            p,s = jax.lax.scan(apply,p,batch[0],unroll=jnp.iinfo(jnp.uint32).max)
+            p,s = jax.lax.scan(apply,p,batch[0],unroll=unroll)
             loss = jnp.mean(self.loss_fn(s,batch[1]))
             return loss,(loss,s,p)
             
@@ -200,3 +204,34 @@ class train_offline(nn.Module):
                 return p,opt_state,s,loss
         
         return loop(params,batch,opt_state)
+    
+
+class flax_wrapper(SNNCell):
+    '''
+    A helper tool that takes a Flax RNN (which handles the carry state explicitly) and returns a module with the same function but hides the state.
+    This makes it compatible with Slax utilities.
+
+    Args:
+    mdl: The Flax RNN to convert.
+    '''
+    mdl: Callable
+    @nn.compact
+    def __call__(self,carry,x=None):
+        m = reinit_model(self.mdl)
+        if x == None:
+            x = carry
+            carry = self.variable('carry','flax',m.initialize_carry,jax.random.PRNGKey(0),x.shape)
+            c = carry.value
+            hidden_carry = True
+        else:
+            c = carry['flax']
+            hidden_carry = False
+
+        c,x = m(c,x)
+
+        if hidden_carry:
+            carry.value = c
+            return x
+        else:
+            carry['flax'] = x
+            return carry, x

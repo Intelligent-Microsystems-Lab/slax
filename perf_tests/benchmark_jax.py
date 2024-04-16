@@ -136,23 +136,35 @@ def slax_full():
     import flax.linen as nn
 
     key = jax.random.PRNGKey(0)
+    dtype = jnp.float16
 
     benchmark_title = f"slax full-precision v{'0.0.1'}"
+
+    def new_policy(prim,*_,**__):
+        v = _
+        #print(v[0].dtype)
+        #print(*_)
+        if v[0].dtype == jnp.int32:
+            #print('yay')
+            return True
+        else:
+            return False
+    np = jax.checkpoint_policies.save_from_both_policies(jax.checkpoint_policies.dots_saveable,new_policy)
 
     def prepare_fn(batch_size, n_steps, n_neurons, n_layers, device):
         class Model(nn.Module):
             @nn.compact
             def __call__(self,x):
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
-                x = nn.Dense(n_neurons)(x)
-                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan()))(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),50)(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),50)(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = sl.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),50)(x)
 
                 return x
 
-        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
+        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=dtype)
 
         # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
         SNN = Model()
@@ -182,6 +194,9 @@ def slax_full():
         net_eval, params = bench_dict["model"]
         jax.grad(net_eval)(params, input_static)
 
+
+    #import pdb;pdb.set_trace()
+
     return prepare_fn, forward_fn, backward_fn, benchmark_title
 
 def slax_flax():
@@ -191,6 +206,7 @@ def slax_flax():
     import flax.linen as nn
 
     key = jax.random.PRNGKey(0)
+    dtype = jnp.float16
 
     benchmark_title = f"slax flax v{'0.0.1'}"
 
@@ -198,25 +214,31 @@ def slax_flax():
         class Model(nn.Module):
             @nn.compact
             def __call__(self,x):
-                x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
-                x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
-                x = nn.Dense(n_neurons)(x)
-                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan()),time_major=True,unroll=jnp.iinfo(jnp.uint32).max)(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),time_major=True,unroll=500)(x)#jnp.iinfo(jnp.uint32).max)(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),time_major=True,unroll=500)(x)#jnp.iinfo(jnp.uint32).max)(x)
+                x = nn.Dense(n_neurons,param_dtype=dtype)(x)
+                x = nn.RNN(sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),time_major=True,unroll=500)(x)#jnp.iinfo(jnp.uint32).max)(x)
 
                 return x
 
-        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=jnp.float32)
+        input_static = jax.random.normal(key,shape=(n_steps, batch_size, n_neurons), dtype=dtype)
 
         # Since there's nothing stochastic about the network, we can avoid using an RNG as a param!
-        SNN = Model()
+        SNN = sl.RNN(sl.get_connect([nn.Dense(n_neurons,param_dtype=dtype),#Model()
+                              sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),
+                              nn.Dense(n_neurons,param_dtype=dtype),
+                              sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype),
+                              nn.Dense(n_neurons,param_dtype=dtype),
+                              sl.LIF(2.,spike_fn=sl.atan(),dtype=dtype)]),unroll=500)
+        #SNN = Model()
         params = SNN.init(key, input_static)
 
         @jax.jit
         def net_eval(weights, events):
-            readout = SNN.apply(weights, events)
-            traces = readout
+            readout = SNN.apply(weights, events, mutable='carry')
+            traces = readout[0]
             return traces.sum()
             #return readout[0].sum()
 
@@ -256,11 +278,11 @@ if __name__ == "__main__":
     benchmark = benchmarks[args.benchmark]
 
     batch_size = int(args.batch_size)
-    n_steps = 500
+    n_steps = 256
     n_layers = 3  # doesn't do anything at the moment
     device = "mps"
 
-    for n_neurons in [
+    for n_neurons in [512,
         1028,
         2048,
         4096,

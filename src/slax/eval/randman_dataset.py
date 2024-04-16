@@ -1,10 +1,22 @@
 # Adapted from https://github.com/fzenke/randman
+# If using, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.
+
+
+
+# MIT License
+# Copyright (c) <year> <copyright holders>
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 import jax
 import jax.numpy as jnp
 from jax.tree_util import Partial
-from randman.jax_randman import JaxRandman as Randman
+from .jax_randman import JaxRandman as Randman
 
 def standardize(x,eps=1e-7):
     mi = x.min(0)
@@ -14,6 +26,7 @@ def standardize(x,eps=1e-7):
 @Partial(jax.jit,static_argnames=('nb_classes','nb_units','nb_steps','dim_manifold','nb_spikes','nb_samples','alpha','shuffle','time_encode','batch_sz','dtype'))
 def randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=100, dim_manifold=2, nb_spikes=1, nb_samples=1000, alpha=2.0, shuffle=True, time_encode=True, batch_sz=None, dtype=jnp.float32):
     """ Adapted from https://github.com/fzenke/randman.
+    If using this, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.
     
     Generates event-based generalized spiking randman classification dataset.
     In this dataset each unit fires a fixed number of spikes. If information is set to be encoded in time, then only
@@ -45,7 +58,7 @@ def randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=10
     randman_seeds = jax.random.randint(manifold_seed, shape=(nb_classes,nb_spikes),maxval=max_value,minval=0)
 
     for k in range(nb_classes):
-        x = jax.random.uniform(uniform_key,(nb_samples,dim_manifold))#*0.95 + 0.025
+        x = jax.random.uniform(uniform_key,(nb_samples,dim_manifold))
         submans = [ Randman(nb_units, dim_manifold, alpha=alpha, seed=randman_seeds[k,i]) for i in range(nb_spikes) ]
         units = []
         times = []
@@ -68,7 +81,6 @@ def randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=10
 
     idx = jnp.arange(len(data))
     if shuffle:
-        #idx = jax.random.shuffle(shuffle_key,idx)
         idx = jax.random.permutation(shuffle_key,idx,independent=True)
     data = data[idx]
     labels = labels[idx]
@@ -85,7 +97,6 @@ def randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=10
         points = jnp.tile(jnp.int32(jnp.floor(data*nb_steps)),(nb_steps,1,1))
         vals = jnp.tile(jnp.arange(nb_steps),(nb_classes*nb_samples,nb_units,1)).transpose(2,0,1)
         data = jnp.where(vals<=points,1,0)
-        #data = jax.random.shuffle(sample_key,data,axis=0)
         data = jax.random.permutation(sample_key,data,axis=0,independent=True)
         labels = jnp.tile(jax.nn.one_hot(labels,nb_classes),(nb_steps,1,1))
 

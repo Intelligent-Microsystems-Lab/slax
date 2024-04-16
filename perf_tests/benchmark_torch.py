@@ -248,7 +248,7 @@ def snntorch():
                 return torch.stack(output)
 
         model = Model().to(device)
-        #model = torch.compile(model, mode="max-autotune")
+        model = torch.compile(model,backend='aot_eager')
         #model = torch.compile(model,backend='openxla')
         input_static = torch.randn(n_steps, batch_size, n_neurons).to(device)
         with torch.no_grad():
@@ -291,16 +291,16 @@ def spikingjelly():
                 # )
                 self.model = nn.Sequential(
                     layer.Linear(n_neurons, n_neurons),
-                    neuron.LIFNode(
-                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    neuron.OTTTLIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="s"
                     ),
                     layer.Linear(n_neurons, n_neurons),
-                    neuron.LIFNode(
-                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    neuron.OTTTLIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="s"
                     ),
                     layer.Linear(n_neurons, n_neurons),
-                    neuron.LIFNode(
-                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="m"
+                    neuron.OTTTLIFNode(
+                        tau=tau, surrogate_function=surrogate.ATan(), step_mode="s"
                     ),
                 )
 

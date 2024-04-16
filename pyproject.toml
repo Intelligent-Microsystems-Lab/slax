@@ -4,12 +4,12 @@ version = "0.0.1"
 authors = [
   { name="Thomas Summe", email="tsumme@nd.edu" },
 ]
-description = "An SNN training package in JAX"
+description = "A forward looking JAX/Flax library for performant prototyping of learning rules for spiking neural networks"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -18,8 +18,6 @@ dependencies = [
 "scikit-learn",
 "matplotlib",
 "jax",
-"randman @ git+https://git@github.com/fzenke/randman.git",
-"torch"
 ]
 
 [project.urls]

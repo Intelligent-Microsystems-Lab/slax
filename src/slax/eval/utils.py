@@ -45,8 +45,8 @@ def compare_grads(train_func,reference_params,reference_grad,train_func_args,com
         The output of comparison_func
     '''
 
-    params,carry,batch,opt_state = train_func_args
-    reference_params['params'] = tree_unflatten(tree_structure(params['params']),tree_leaves(reference_params['params']))
-    _,_,_,_,new_grad,_ = train_func(reference_params,carry,batch,opt_state,return_grad=True)
-    reference_grad = tree_unflatten(tree_structure(new_grad),tree_leaves(reference_params['params']))
+    params,batch,opt_state = train_func_args
+    params['params'] = tree_unflatten(tree_structure(params['params']),tree_leaves(reference_params['params']))
+    _,_,_,_,new_grad = train_func(params,batch,opt_state,return_grad=True)
+    reference_grad = tree_unflatten(tree_structure(new_grad),tree_leaves(reference_grad))
     return comparison_func(reference_grad,new_grad)

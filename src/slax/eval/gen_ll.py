@@ -154,7 +154,7 @@ def gen_loss_landscape(get_loss,load_params,n_iter,n_models=1):
     return rf"{s}" if plt.rcParams["text.usetex"] else f"{s}"
 
 
-  #CS = ax.contourf(xv, yv, zv, 100)
+
   CS = ax.contour(xv, yv, zv, 100)
   ax.clabel(CS, CS.levels, inline=True, fmt=fmt, fontsize=10)
 
@@ -171,7 +171,6 @@ def gen_loss_landscape(get_loss,load_params,n_iter,n_models=1):
         linewidth=gen_lw,
     )
 
-  # ax.legend(['OTTT','Approx OTPE', 'OSTL', 'OTPE', 'BPTT'],fontsize=32)
   ax.set_xlabel(
       "1st PC: %.2f %%" % (ratio_x * 100),
       fontdict={"weight": "bold", "size": font_size},
@@ -180,8 +179,3 @@ def gen_loss_landscape(get_loss,load_params,n_iter,n_models=1):
       "2nd PC: %.2f %%" % (ratio_y * 100),
       fontdict={"weight": "bold", "size": font_size},
   )
-
-  #plt.tight_layout()
-  #plt.show()
-  # plt.savefig("0"+".png", dpi=300, bbox_inches="tight")
-  # plt.close()
