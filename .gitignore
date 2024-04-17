@@ -11,3 +11,5 @@ perf_tests/data.csv
 .DS_Store
 *.png
 *.csv
+dist/slax-0.0.1.tar.gz
+dist/slax-0.0.1-py3-none-any.whl
