@@ -132,163 +132,68 @@ def reinit_model(mdl,name=None):
     if name != None:
         d['name'] = name
     return mdl.__class__(**d)
-    
-def connect(chains,p=None,return_carry=True,return_initialized=True):
+
+def connect(chains,cat=None,return_carry=True,return_initialized=True):
     """Connects modules together while optionally specifying skip and recurrent connections.
 
     Args:
     chains: A list of modules
-    p: A dictionary for skip/recurrent connections where each key is a number corresponding to the list index and the values are what it additionally feed to.
+    cat: A dictionary for skip/recurrent connections where each key is a number corresponding to the list index and the values are what it additionally feed to.
     return_carry: Whether or not to return a carry state. When processing the time dimension inside the network, like with sl.RNN, set this to False.
     return_initialized: Whether or not the returned model is initialized.
 
     Returns:
     A module that sequentially connects the provides modules and adds any additionally specified connections.
     """
-    
-    #loop = has_time
-    class connect(SNNCell):
-        merge: str = 'cat'
-        carry_init: nn.initializers.Initializer = nn.initializers.zeros_init()
-        has_time: bool = not return_carry # could also call it feed-forward
 
-        #def setup(self):
-            #self.has_time=has_time
+    if cat == None:
+        cat = flax.core.frozen_dict.FrozenDict({})
+    else:
+        cat = flax.core.frozen_dict.FrozenDict({str(k):cat[k] for k in cat.keys()})
+
+    class _connect(SNNCell):
+        chain: Sequence = tuple(chains)
+        pair: Dict = cat
+        carry_init: nn.initializers.Initializer = nn.initializers.zeros_init()
 
         @nn.compact
-        def __call__(self,carry,x=None):
-            if x==None:
-                x = carry
-                ex_carry = False
-            else:
-                self.variables['carry'] = carry
-                ex_carry = True
+        def __call__(self,x):
             
-            if p == None:
+            if self.pair == None:
                 pair = {}
             else:
-                pair = p
+                pair = self.pair
             u = set(chain.from_iterable(pair.values()))
             counter = 0
             inp = x
-            ms = []
-            vs = []
 
             if self.is_initializing():
-                for i in range(len(chains)):
-                    mdl = chains[i]
-                    ms.append(reinit_model(mdl,name='chain_{}'.format(i)))
-                    x = ms[-1](x)
+                for mdl in self.chain:
+                    x = mdl(x)
                     if counter in u:
-                        v = self.variable('carry','rec_{}'.format(counter),jnp.zeros,x.shape)
-                        vs.append(v)
+                        v = self.variable('carry','rec_{}'.format(self.chain[counter].name),jnp.zeros,x.shape)
                     counter += 1
             x = inp
             counter = 0
-            c2 = 0
-            if self.merge == 'cat':
-                if self.is_initializing():
-                    for mdl in ms:
-                        x = mdl(x)
-                        if counter in pair.keys():
-                            for i in pair[counter]:
-                                #v = self.variable('carry','rec_{}'.format(i))
-                                v = vs[c2]
-                                x += reinit_model(mdl,name='chain_{}_rec_{}'.format(counter,i))(v.value)
-                                c2 += 1
-                        # if counter in u:
-                        #     v = self.variable('carry','rec_{}'.format(counter))
-                        #     v.value = x
-                        counter += 1
-                else:
-                    for i in range(len(chains)):
-                        mdl = chains[i]
-                        x = reinit_model(mdl,name='chain_{}'.format(i))(x)
-                        if counter in pair.keys():
-                            for j in pair[counter]:
-                                v = self.get_variable('carry','rec_{}'.format(j))
-                                x += reinit_model(mdl,name='chain_{}_rec_{}'.format(counter,j))(v)
-                        if counter in u:
-                            self.put_variable('carry','rec_{}'.format(counter),x)
-                            #v.value = x
-                        counter += 1
-
-            elif self.merge == 'add':
-                for mdl in chains:
-                    if counter in pair.keys():
-                        for i in pair[counter]:
-                            v = self.variable('carry','rec_{}'.format(i))
-                            x += v.value
-                        x = mdl(x)
-                    if counter in u:
-                        v = self.variable('carry','rec_{}'.format(counter))
-                        v.value = x
-                    counter += 1
-
-            if ex_carry:
-                carry = self.variables['carry']
-                del self.variables['carry']
-                return carry, x
-            else:
-                return x
-
+            #print(4 in list(pair.keys()))
+            for mdl in self.chain:
+                x = mdl(x)
+                if str(counter) in list(pair.keys()):
+                    for i in self.pair[str(counter)]:
+                        #v = self.variable('carry','rec_{}'.format(self.chain[i].name))
+                        v = self.get_variable('carry','rec_{}'.format(self.chain[i].name))
+                        x += reinit_model(mdl,name='rec_{}_{}'.format(i,counter))(v)
+                if counter in u:
+                    #v = self.variable('carry','rec_{}'.format(self.chain[counter].name))
+                    self.put_variable('carry','rec_{}'.format(self.chain[counter].name),x)
+                    #v.value = x
+                counter += 1
+                
+            return x
     if return_initialized:
-        return connect()
+        return _connect()
     else:
-        return connect
-
-###### Previously functional code below ##########
-
-# class connect(SNNCell):
-#     chain: Sequence
-#     pair: Dict = None
-#     merge: str = 'cat'
-#     carry_init: nn.initializers.Initializer = nn.initializers.zeros_init()
-
-#     @nn.compact
-#     def __call__(self,x):
-        
-#         if self.pair == None:
-#             pair = {}
-#         else:
-#             pair = self.pair
-#         u = set(chain.from_iterable(pair.values()))
-#         counter = 0
-#         inp = x
-
-#         if self.is_initializing():
-#             for mdl in self.chain:
-#                 x = mdl(x)
-#                 if counter in u:
-#                     v = self.variable('carry','rec_{}'.format(self.chain[counter].name),jnp.zeros,x.shape)
-#                 counter += 1
-#         x = inp
-#         #counter = 0
-#         if self.merge == 'cat':
-#             for mdl in self.chain:
-#                 x = mdl(x)
-#                 if counter in pair.keys():
-#                     for i in self.pair[counter]:
-#                         v = self.variable('carry','rec_{}'.format(self.chain[i].name))
-#                         x += reinit_model(mdl)(v.value)
-#                 if counter in u:
-#                     v = self.variable('carry','rec_{}'.format(self.chain[counter].name))
-#                     v.value = x
-#                 counter += 1
-
-#         elif self.merge == 'add':
-#             for mdl in self.chain:
-#                 if counter in pair.keys():
-#                     for i in self.pair[counter]:
-#                         v = self.variable('carry','rec_{}'.format(self.chain[i].name))
-#                         x += v.value
-#                     x = mdl(x)
-#                 if counter in u:
-#                     v = self.variable('carry','rec_{}'.format(self.chain[counter].name))
-#                     v.value = x
-#                 counter += 1
-            
-#         return x
+        return _connect
 
 def RNN(model,unroll=jnp.iinfo(jnp.uint32).max):
     """Applies a provided model or module over a sequence.
@@ -334,75 +239,3 @@ def RNN(model,unroll=jnp.iinfo(jnp.uint32).max):
             x = rec()(x)
             return x
     return output_model()
-
-
-
-def pack_policy(prim,*_,**__):
-    v = _
-    print(prim)
-    #print(v[0].dtype)
-    #print(*_)
-    if v[0].dtype == jnp.uint8:#should this be jnp.int32 or uint8?:
-        #print('yay')
-        return True
-    else:
-        return False
-    
-@jax.custom_vjp
-def pack(x,axis=None):
-    a = sp.empty(shape=x.shape,dtype=x.dtype)
-    # if x.size > jnp.iinfo(jnp.uint16).max:
-    #    a.data = jax.vmap(lambda x_in: jnp.packbits(jnp.bool_(x_in),axis=axis).view(x.dtype))(x)
-    # else:
-    a.data = jnp.packbits(jnp.bool_(x),axis=axis).view(x.dtype)
-    return a
-def pack_fwd(x,axis=None):
-  return pack(x,axis=axis), ()
-
-def pack_bwd(res, g):
-  return (g.data.reshape(g.shape),None)
-
-pack.defvjp(pack_fwd, pack_bwd)
-
-@jax.custom_vjp
-def unpack(arr,axis=None):
-    # if arr.data.size > jnp.iinfo(jnp.uint16).max:
-    #     x = jax.vmap(lambda x: jnp.array(jnp.unpackbits(x.view(jnp.uint8),axis=axis),arr.dtype).reshape(arr.shape[1:]))(arr.data.reshape(arr.shape[0],-1))
-    # else:
-    x = jnp.array(jnp.unpackbits(arr.data.view(jnp.uint8),axis=axis),arr.dtype).reshape(arr.shape)
-    return x
-def unpack_fwd(arr,axis=None):
-    return unpack(arr,axis=axis),()
-
-def unpack_bwd(res, g):
-    return (g,None)
-
-unpack.defvjp(unpack_fwd, unpack_bwd)
-
-
-class LeakyIntegrator(nn.Module):
-    leak: float
-
-    @nn.compact
-    def __call__(self,x):
-        value = self.variable('carry','LeakyIntegrator',jnp.zeros,1)
-        v = value.value
-
-        v = v*self.leak + x
-
-        return v
-
-class OnlineLeakyIntegrator(nn.Module):
-    leak: float
-    n_steps: int
-
-    @nn.compact
-    def __call__(self,x):
-        value = self.variable('carry','LeakyIntegrator',jnp.zeros,1)
-        counter = self.variable('carry','counter',jnp.zeros,1)
-        v = value.value
-        c = counter.value
-        c += 1
-        #v += x * self.leak**(self.n_steps-c)
-
-        return x * self.leak**(self.n_steps-c)#v

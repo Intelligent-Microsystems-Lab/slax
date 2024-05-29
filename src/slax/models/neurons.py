@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
+import numpy as np
+import nir
 from typing import Any, Callable
 from .surrogates import fast_sigmoid, multi_gauss
 from .utils import SNNCell, reinit_model, Neuron
@@ -63,6 +65,23 @@ class LIF(Neuron):
         else:
             carry['Vmem'] = vmem
             return carry, spikes
+        
+    def output_nir(self,params,input_sz):
+        dt = 1e-4
+        leak = np.array(nn.sigmoid(params['params']['tau']))*np.ones(input_sz)
+        v_thresh = np.array(self.v_threshold)*np.ones(input_sz)
+        print(leak)
+        r = 1/(1-leak)
+        print(r)
+        tau_mem = dt*r
+        v_leak = np.zeros(input_sz)
+        
+        return nir.LIF(
+            tau = tau_mem,
+            r = r,
+            v_leak = v_leak,
+            v_threshold = v_thresh,
+            )
 
 class LTC(Neuron):
     '''

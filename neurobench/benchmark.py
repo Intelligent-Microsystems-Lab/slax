@@ -1,8 +1,10 @@
 import sys
 from contextlib import redirect_stdout
 from tqdm import tqdm
+import torch
 
-from . import static_metrics, workload_metrics
+#from . import static_metrics, workload_metrics
+import static_metrics, workload_metrics
 
 # workload metrics which require hooks
 requires_hooks = ["activation_sparsity", "number_neuron_updates", "synaptic_operations"]
@@ -26,6 +28,7 @@ class Benchmark():
         self.dataloader = dataloader # dataloader not dataset
         self.preprocessors = preprocessors
         self.postprocessors = postprocessors
+        self.params = params
 
         self.static_metrics = {m: getattr(static_metrics, m) for m in metric_list[0]}
         self.workload_metrics = {m: getattr(workload_metrics, m) for m in metric_list[1]}
@@ -83,10 +86,13 @@ class Benchmark():
                     data = alg(data)
 
                 # Run model on test data
-                preds = self.model(data[0])
+                preds = self.model.apply(self.params,(data[0]))[0]
+                #preds = torch.Tensor(preds)
 
-                for alg in postprocessors:
-                    preds = alg(preds)
+                #for alg in postprocessors:
+                    #preds = alg(preds)
+                #preds = workload_metrics.classification_accuracy(self.model,preds,data)
+                #preds = torch.Tensor(preds)
 
                 # Data metrics
                 batch_results = {}
@@ -94,6 +100,7 @@ class Benchmark():
                     batch_results[m] = self.workload_metrics[m](self.model, preds, data)
 
                 for m, v in batch_results.items():
+                    v = float(v)
                     # AccumulatedMetrics are computed after all batches complete
                     if isinstance(self.workload_metrics[m], workload_metrics.AccumulatedMetric):
                         continue
@@ -106,7 +113,7 @@ class Benchmark():
                             results[m] += v * batch_size / dataset_len
 
                 # delete hook contents
-                self.model.reset_hooks()
+                #self.model.reset_hooks()
 
                 if verbose:
                     for m in self.workload_metrics.keys():

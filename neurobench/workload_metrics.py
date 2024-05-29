@@ -1,10 +1,10 @@
 
 import torch
 import numpy as np
-from ..utils import check_shape, make_binary_copy, single_layer_MACs
-from .hooks import ActivationHook, LayerHook
+#from ..utils import check_shape, make_binary_copy, single_layer_MACs
+#from .hooks import ActivationHook, LayerHook
 import slax as sl
-import jax as jnp
+import jax.numpy as jnp
 
 class AccumulatedMetric:
     """ Abstract class for a metric which must save state between batches.
@@ -142,8 +142,12 @@ def classification_accuracy(model, preds, data):
     # check_shape(preds, data[1])
     # equal = torch.eq(preds, data[1])
     # return torch.mean(equal.float()).item()
-    equal = jnp.eq(preds, data[1])
-    return jnp.mean(equal.float())
+    # print(preds.shape)
+    # print('1',jnp.argmax(preds,axis=1))
+    # print('2',data[1])
+    # print('3',jnp.asarray(data[1]))
+    equal = jnp.equal(jnp.argmax(preds,axis=1), jnp.asarray(data[1]))
+    return jnp.mean(equal)
 
 def MSE(model, preds, data):
     """ Mean squared error of the model predictions.
