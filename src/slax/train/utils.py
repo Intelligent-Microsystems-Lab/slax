@@ -1,12 +1,15 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
+from flax import nnx
+import flax
 from typing import Callable
 from jax.tree_util import tree_leaves, tree_map
 import optax
-from ..models.utils import reinit_model, SNNCell
+from ..models.utils import reinit_model, compat_scan
 
-class train_online_deferred(nn.Module):
+
+class train_online_deferred(nnx.Module):
     '''
     A helper tool for easily implementing an online training loop where parameter updates are saved till the end.
 
@@ -16,47 +19,51 @@ class train_online_deferred(nn.Module):
     either an array to averaged or a scalar loss value.
     optimizer: An initialized optax optimizer
     '''
-    snnModel: Callable
-    loss_fn: Callable
-    optimizer: Callable
+    def __init__(self,snnModel,loss_fn,optimizer,unroll=False):
+        self.snnModel = snnModel
+        self.loss_fn = loss_fn
+        self.optimizer = nnx.Optimizer(snnModel,optimizer)
+        self.unroll = unroll
+        self.loss = None
+        self.grad = None
+        self.output = None
 
-    def __call__(self,params,batch,opt_state,return_grad=False):
+    @nnx.jit
+    def __call__(self,batch):
         '''
         Args:
-        params: Variable collection for snnModel
-        carry: Carry/state for snnModel
         batch: Tuple of the input and labels
-        opt_state: Variable collection of the optimizer
         '''
 
-        def loss_fn(params,state,batch):
-            params = {'params':params,'carry':state}
-            s,state_upd = self.snnModel.apply(params,batch[0],mutable='carry')
+        graph, param, state = nnx.split(self.snnModel,nnx.Param,...)
+
+        def loss_fn(mdl,batch):
+            s = mdl(batch[0])
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,state_upd)
+            return loss,(loss,s)
 
         def one_step(carry,batch):
-            params,opt_state,grad = carry
-            g,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch)
+            st,grad = carry
+            model = nnx.merge(graph,param,st)
+            g,(loss,s) = nnx.grad(loss_fn,has_aux=True)(model,batch)
+            _,_,st =  nnx.split(model,nnx.Param,...)
             grad = tree_map(lambda x,y: x+y,g,grad)
-            params.update(state_upd)
-            return (params,opt_state,grad), (s,loss)
-        
-        def loop(p,batch,opt_state):
-            grad = tree_map(jnp.zeros_like,p['params'])
-            (p,opt_state,grad),(s,loss) = jax.lax.scan(one_step,(p,opt_state,grad),batch,unroll=jnp.iinfo(jnp.uint32).max)
+            return (st,grad), (s,loss)
+
+        def loop(p,batch):
+            grad = tree_map(jnp.zeros_like,p)
+            (st,grad),(s,loss) = compat_scan(one_step,(state,grad),batch,unroll=self.unroll)
             grad = tree_map(lambda x: x/batch[0].shape[1],grad)
-            updates, opt_state = self.optimizer.update(grad,opt_state)
-            p['params'] = optax.apply_updates(p['params'], updates)
-            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
-            if return_grad:
-                return p,opt_state,s,loss,grad
-            else:
-                return p,opt_state,s,loss
-        
-        return loop(params,batch,opt_state)
+            return s, loss, grad
+
+        s, loss, grad = loop(param,batch)
+
+        self.optimizer.update(grad)
+        self.grad = grad
+        self.loss = loss
+        self.output = s
     
-class train_online(nn.Module):
+class train_online(nnx.Module):
     '''
     A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.
 
@@ -66,104 +73,111 @@ class train_online(nn.Module):
     either an array to averaged or a scalar loss value.
     optimizer: An initialized optax optimizer
     '''
-    snnModel: Callable
-    loss_fn: Callable
-    optimizer: Callable
-
-    def __call__(self,params,batch,opt_state):
+    def __init__(self,snnModel,loss_fn,optimizer,unroll=False):
+        self.snnModel = snnModel
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.opt_state = optimizer.init(nnx.split(snnModel,nnx.Param,...)[1])
+        self.unroll = unroll
+        self.loss = None
+        self.grad = None
+        self.output = None
+    @nnx.jit
+    def __call__(self,batch):
         '''
         Args:
-        params: Variable collection for snnModel
-        carry: Carry/state for snnModel
         batch: Tuple of the input and labels
-        opt_state: Variable collection of the optimizer
         '''
-
-        def loss_fn(params,state,batch):
-            params = {'params':params,'carry':state}
-            s,state_upd = self.snnModel.apply(params,batch[0],mutable='carry')
+        graph, param, state = nnx.split(self.snnModel,nnx.Param,...)
+        def loss_fn(mdl,batch):
+            s = mdl(batch[0])
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,state_upd)
+            return loss,(loss,s)
 
         def one_step(carry,batch):
-            params,opt_state = carry
-            grad,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch)
-            updates, opt_state = self.optimizer.update(grad,opt_state)
-            params['params'] = optax.apply_updates(params['params'], updates)
-            params.update(state_upd)
-            return (params,opt_state), (s,loss)
+            st,p,opt_state = carry
+            model = nnx.merge(graph,p,st)
+            g,(loss,s) = nnx.grad(loss_fn,has_aux=True)(model,batch)
+            _,p,st =  nnx.split(model,nnx.Param,...)
+            updates, opt_state = self.optimizer.update(g,opt_state,p)
+            p = optax.apply_updates(p, updates)
+
+            return (st,p,opt_state), (s,loss)
         
         def loop(p,batch,opt_state):
-            (p,opt_state),(s,loss) = jax.lax.scan(one_step,(p,opt_state),batch,unroll=jnp.iinfo(jnp.uint32).max)
-            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
-            return p,opt_state,s,loss
+            (_,param,opt_state),(s,loss) = compat_scan(one_step,(state,p,opt_state),batch,unroll=self.unroll)
+            return param,opt_state,s,loss
         
-        return loop(params,batch,opt_state)
+        p,o,s,l = loop(param,batch,self.opt_state)
     
+        nnx.update(self.snnModel,p)
+        self.opt_state = o
+        self.loss = l
+        self.output = s
 
-class FPTT(nn.Module):
+class FPTT(nnx.Module):
     '''
-    An implementation of Forward Propagation Through Time as an online training loop, which can be used the same way as `train_online`.
-
-    Kag, A. &amp; Saligrama, V.. (2021). Training Recurrent Neural Networks via Forward Propagation Through Time. <i>Proceedings of the 38th International Conference on Machine Learning</i>, in <i>Proceedings of Machine Learning Research</i> 139:5189-5200 Available from https://proceedings.mlr.press/v139/kag21a.html.
+    A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.
 
     Args:
     snnModel: An initializes Flax module
     loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
     either an array to averaged or a scalar loss value.
     optimizer: An initialized optax optimizer
-    alpha: A hyperparameter for FPTT that modulates the influence of the risk function
     '''
-    snnModel: Callable
-    loss_fn: Callable
-    optimizer: Callable
-    alpha: float = 0.5
-
-    def __call__(self,params,batch,opt_state,unroll=jnp.iinfo(jnp.uint32).max):
+    def __init__(self,snnModel,loss_fn,optimizer,alpha=0.5,unroll=False):
+        self.snnModel = snnModel
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.opt_state = optimizer.init(nnx.split(snnModel,nnx.Param,...)[1])
+        self.alpha = alpha
+        self.unroll = unroll
+        self.loss = None
+        self.grad = None
+        self.output = None
+    @nnx.jit
+    def __call__(self,batch):
         '''
         Args:
-        params: Variable collection for snnModel
-        carry: Carry/state for snnModel
         batch: Tuple of the input and labels
-        opt_state: Variable collection of the optimizer
         '''
-        
-        def loss_fn(params,state,batch,lam,W_bar):
-            p = {'params':params,'carry':state}
-            s,state_upd = self.snnModel.apply(p,batch[0],mutable='carry')
+        graph, param, state = nnx.split(self.snnModel,nnx.Param,...)
+        def loss_fn(mdl,batch,lam,W_bar):
+            params = nnx.split(mdl,nnx.Param,...)[1]
+            s = mdl(batch[0])
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            #combine = lambda x,y,z: jnp.sum(jnp.square(x - y - (0.5/self.alpha)*z))
             combine = lambda x,y,z: x - y - (0.5/self.alpha)*z
-            
-            #loss = loss + (0.5*self.alpha)*jnp.sum(jnp.array(tree_leaves(tree_map(combine,params,W_bar,lam))))
-            loss = loss + (0.5*self.alpha)*optax.tree_utils.tree_l2_norm(tree_map(combine,params,W_bar,lam),squared=True)
-            #jnp.sum(ravel_pytree(tree_map(combine,{'params':params['params']},W_bar,lam))[0])
-            return loss,(loss,s,state_upd)
+            loss += (0.5*self.alpha)*optax.tree_utils.tree_l2_norm(tree_map(combine,params,W_bar,lam),squared=True)
+            return loss,(loss,s)
 
         def one_step(carry,batch):
-            params,opt_state,lam,W_bar = carry
-            grad,(loss,s,state_upd) = jax.jacrev(loss_fn,has_aux=True)(params['params'],params['carry'],batch,lam,W_bar)
-            updates, opt_state = self.optimizer.update(grad,opt_state)
-            params['params'] = optax.apply_updates(params['params'], updates)
-            lam = tree_map(lambda x,y,z: z - self.alpha*(x-y),params['params'],W_bar,lam) # check if this should be updated params in one_step or original params from __call__
-            W_bar = tree_map(lambda x,y,z: 0.5*(x+y) - (0.5/self.alpha)*z,W_bar,params['params'],lam)
-            params.update(state_upd)
-            return (params,opt_state,lam,W_bar), (s,loss)
+            st,p,opt_state,lam,W_bar = carry
+            model = nnx.merge(graph,p,st)
+            g,(loss,s) = nnx.grad(loss_fn,has_aux=True)(model,batch,lam,W_bar)
+            _,p,st =  nnx.split(model,nnx.Param,...)
+            updates, opt_state = self.optimizer.update(g,opt_state,p)
+            p = optax.apply_updates(p, updates)
+            lam = tree_map(lambda x,y,z: z - self.alpha*(x-y),p,W_bar,lam) # check if this should be updated params in one_step or original params from __call__
+            W_bar = tree_map(lambda x,y,z: 0.5*(x+y) - (0.5/self.alpha)*z,W_bar,p,lam)
+
+            return (st,p,opt_state,lam,W_bar), (s,loss)
         
         def loop(p,batch,opt_state):
-            lam = tree_map(jnp.zeros_like,p['params'])
-            W_bar = p['params']
-            (p_update,opt_state,lam,W_bar),(s,loss) = jax.lax.scan(one_step,(p,opt_state,lam,W_bar),batch,unroll=unroll)
-            p_update['carry'] = tree_map(jnp.zeros_like,p_update['carry'])
-            return p_update,opt_state,s,loss
+            lam = tree_map(jnp.zeros_like,p)
+            W_bar = p
+            (_,param,opt_state,_,_),(s,loss) = compat_scan(one_step,(state,p,opt_state,lam,W_bar),batch,unroll=self.unroll)
+            return param,opt_state,s,loss
         
-        return loop(params,batch,opt_state)
+        p,o,s,l = loop(param,batch,self.opt_state)
     
+        nnx.update(self.snnModel,p)
+        self.opt_state = o
+        self.loss = l
+        self.output = s
 
-
-class train_offline(nn.Module):
+class train_offline(nnx.Module):
     '''
-    A helper tool for easily implementing an offline training loop. It's implementation is similar to `train_online`.
+    A helper tool for easily implementing an online training loop where parameter updates are saved till the end.
 
     Args:
     snnModel: An initializes Flax module
@@ -171,67 +185,51 @@ class train_offline(nn.Module):
     either an array to averaged or a scalar loss value.
     optimizer: An initialized optax optimizer
     '''
-    snnModel: Callable
-    loss_fn: Callable
-    optimizer: Callable
+    def __init__(self,snnModel,loss_fn,optimizer,unroll=False,scan=False):
+        self.snnModel = snnModel
+        self.loss_fn = loss_fn
+        self.optimizer = nnx.Optimizer(snnModel,optimizer)
+        self.unroll = unroll
+        self.scan = scan
+        self.loss = None
+        self.grad = None
+        self.output = None
 
-    def __call__(self,params,batch,opt_state,return_grad=False,unroll=jnp.iinfo(jnp.uint32).max):
+    @nnx.jit
+    def __call__(self,batch):
         '''
         Args:
-        params: Variable collection for snnModel
-        carry: Carry/state for snnModel
         batch: Tuple of the input and labels
-        opt_state: Variable collection of the optimizer
         '''
-        def apply(p,xs):
-            s,upd = self.snnModel.apply(p,xs,mutable='carry')
-            p.update(upd)
-            return p,s
-        def loss_fn(params,state,batch):
-            p = {'params':params,'carry':state}
-            p,s = jax.lax.scan(apply,p,batch[0],unroll=unroll)
+
+        graph, param, state = nnx.split(self.snnModel,nnx.Param,...)
+
+        def scan_loss_fn(mdl,batch):
+            s = RNN(mdl,unroll=self.unroll)(batch[0])
             loss = jnp.mean(self.loss_fn(s,batch[1]))
-            return loss,(loss,s,p)
-            
-        def loop(p,batch,opt_state):
-            grad,(loss,s,p) = jax.jacrev(loss_fn,has_aux=True)(p['params'],p['carry'],batch)
-            updates, opt_state = self.optimizer.update(grad,opt_state)
-            p['params'] = optax.apply_updates(p['params'], updates)
-            p['carry'] = tree_map(jnp.zeros_like,p['carry'])
-            if return_grad:
-                return p,opt_state,s,loss,grad
+            return loss,(loss,s)
+
+        def loss_fn(mdl,batch):
+            s = mdl(batch[0])
+            loss = jnp.mean(self.loss_fn(s,batch[1]))
+            return loss,(loss,s)
+
+        def one_step(st,batch):
+            model = nnx.merge(graph,param,st)
+            if self.scan:
+                g,(loss,s) = nnx.grad(scan_loss_fn,has_aux=True)(model,batch)
             else:
-                return p,opt_state,s,loss
-        
-        return loop(params,batch,opt_state)
-    
+                g,(loss,s) = nnx.grad(loss_fn,has_aux=True)(model,batch)
+            _,_,st =  nnx.split(model,nnx.Param,...)
+            return g,s,loss
 
-class flax_wrapper(SNNCell):
-    '''
-    A helper tool that takes a Flax RNN (which handles the carry state explicitly) and returns a module with the same function but hides the state.
-    This makes it compatible with Slax utilities.
+        def loop(batch):
+            grad,s,loss = one_step(state,batch)
+            return s, loss, grad
 
-    Args:
-    mdl: The Flax RNN to convert.
-    '''
-    mdl: Callable
-    @nn.compact
-    def __call__(self,carry,x=None):
-        m = reinit_model(self.mdl)
-        if x == None:
-            x = carry
-            carry = self.variable('carry','flax',m.initialize_carry,jax.random.PRNGKey(0),x.shape)
-            c = carry.value
-            hidden_carry = True
-        else:
-            c = carry['flax']
-            hidden_carry = False
+        s, loss, grad = loop(batch)
 
-        c,x = m(c,x)
-
-        if hidden_carry:
-            carry.value = c
-            return x
-        else:
-            carry['flax'] = x
-            return carry, x
+        self.optimizer.update(grad)
+        self.grad = grad
+        self.loss = loss
+        self.output = s
