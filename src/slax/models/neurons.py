@@ -40,9 +40,9 @@ class LIF(Neuron):
         
     def __call__(self,x):
         if self.trainable_tau:
-            self.Vmem.value += nn.sigmoid(self.tau.value)*self.Vmem.value + x
+            self.Vmem.value = nn.sigmoid(self.tau.value)*self.Vmem.value + x
         else:
-            self.Vmem.value += nn.sigmoid(self.tau)*self.Vmem.value + x
+            self.Vmem.value = nn.sigmoid(self.tau)*self.Vmem.value + x
         spikes = self.spike_fn(self.Vmem.value-self.v_threshold)
         if self.subtraction_reset:
             self.Vmem.value -= spikes*self.v_threshold

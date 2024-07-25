@@ -125,27 +125,30 @@ def compat_scan(f,carry,xs,unroll=False,length=None):
     (carry,ind), ys = jax.lax.scan(exec,(carry,ind),xs,unroll=unroll,length=length)
     return carry, ys
 
+class RNN(nnx.Module):
+    def __init__(self,mdl,unroll=False,length=None):
+        """Applies a provided model or module over a sequence.
 
-# Will probably only output the model rather than the output. This function will become a module
-def RNN(mdl,x=None,unroll=False,length=None):
-    """Applies a provided model or module over a sequence.
+        Args:
+        model: The model to apply of the sequence
+        xs: Input data
+        unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at the cost of compilation time.
+        Length: The number of iterations if it cannot be inferred
 
-    Args:
-    model: The model to apply of the sequence
-    xs: Input data
-    unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at teh cost of compilation time.
-    Length: The number of iterations if it cannot be inferred
-
-    Returns:
-    A model/module that takes in data with the time dimension, if xs is not given. If xs is given, returns the stacked output.
-    """
-    graph,param,var = nnx.split(mdl,nnx.Param,...)
-    def forward(state,inp,):
-        model = nnx.merge(graph,param,state)
-        out = model(inp)
-        state = nnx.split(model,nnx.Param,...)[2]
-        return state, out
-    if x==None:
-        return lambda x: compat_scan(forward,var,x,unroll=unroll,length=length)[1]
-    else:
-        return compat_scan(forward,var,x,unroll=unroll,length=length)[1]
+        Returns:
+        A model/module that takes in data with the time dimension, if xs is not given. If xs is given, returns the stacked output.
+        """
+        graph,param,var = nnx.split(mdl,nnx.Param,...)
+        self.mdl = mdl
+        self.var = var
+        self.unroll = unroll
+        self.length = length
+        def forward(state,inp):
+            model = nnx.merge(graph,param,state)
+            out = model(inp)
+            state = nnx.split(model,nnx.Param,...)[2]
+            return state, out
+        self.forward = forward
+        
+    def __call__(self,x):
+        return jax.lax.scan(self.forward,self.var,x,unroll=self.unroll,length=self.length)[1]
