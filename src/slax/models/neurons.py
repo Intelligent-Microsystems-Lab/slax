@@ -25,9 +25,9 @@ class LIF(Neuron):
     carry_init: Initializer for the carry state
     dtype: Data type of the membrane potential. This only matters if you use "initialize_carry". Defaults to float32
     '''
-    def __init__(self,size,init_tau=2.,spike_fn=fast_sigmoid(),v_threshold=1.0,v_reset=0.0,subtraction_reset=True,trainable_tau=False,carry_init=jnp.zeros,stop_du_ds=False,dtype=jnp.float32):
+    def __init__(self,size,init_tau=2.,spike_fn=fast_sigmoid(),v_threshold=1.0,v_reset=0.0,subtraction_reset=True,train_tau=False,carry_init=jnp.zeros,stop_du_ds=False,dtype=jnp.float32):
         self.Vmem = nnx.Variable(carry_init(size))
-        if trainable_tau:
+        if train_tau:
             self.tau = nnx.Param(init_tau)
         else:
             self.tau = init_tau
@@ -36,10 +36,10 @@ class LIF(Neuron):
         self.v_threshold = v_threshold
         self.v_reset = v_reset
         self.subtraction_reset = subtraction_reset
-        self.trainable_tau = trainable_tau
+        self.train_tau = train_tau
         
     def __call__(self,x):
-        if self.trainable_tau:
+        if self.train_tau:
             self.Vmem.value = nn.sigmoid(self.tau.value)*self.Vmem.value + x
         else:
             self.Vmem.value = nn.sigmoid(self.tau)*self.Vmem.value + x
@@ -52,7 +52,7 @@ class LIF(Neuron):
         
     def output_nir(self):
         dt = 1e-4
-        if self.trainable_tau:
+        if self.train_tau:
             leak = np.array(nn.sigmoid(self.tau.value))*np.ones(self.size)
         else:
             leak = np.array(nn.sigmoid(self.tau))*np.ones(self.size)

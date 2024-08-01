@@ -2,15 +2,21 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 
-
+def stack_state(x):
+    l = jax.tree.leaves(x)
+    if len(l)>0:
+        return jnp.stack(l)
+    else:
+        return jnp.array([])
 
 def output(graph,param,state,x):
     def forward(x):
         model = nnx.merge(graph,param,state)
         out = model(x)
         return out, nnx.split(model,nnx.Param,...)[2]
-    out,f_vjp,state = jax.vjp(forward,x,has_aux=True)
-    return (jnp.expand_dims(out,0),jnp.stack(jax.tree.leaves(state))),(out,state,f_vjp)
+    (out,f_vjp,state) = jax.vjp(forward,x,has_aux=True)
+    #return (jnp.expand_dims(out,0),jnp.stack(jax.tree.leaves(state))),(out,state,f_vjp)
+    return (jnp.expand_dims(out,0),stack_state(state)),(out,state,f_vjp)
 
 def sum_output(graph,param,state,x):
     def forward(x):
@@ -30,7 +36,7 @@ def diag_rtrl_update(a,b,c):
 
 def diag(x):
     d = jnp.diagonal(x,axis1=1,axis2=-1)
-    d = jnp.squeeze(d)
+    #d = jnp.squeeze(d)
     return d
 
 def rtrl_update(a,b,c):

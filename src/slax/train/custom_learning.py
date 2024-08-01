@@ -12,7 +12,7 @@ from functools import partial
 
 
 class diag_rtrl(nnx.Module):
-    def __init__(self, mdl, batch_sz, diagonal_sum=False):
+    def __init__(self, mdl, batch_sz, diagonal_sum=True):
         self.mdl = mdl
         graph,param,state = nnx.split(mdl,nnx.Param,...)
         E = [jax.tree.map(jnp.zeros_like,param)]*len(jax.tree.leaves(state))
@@ -31,10 +31,14 @@ class diag_rtrl(nnx.Module):
                 ((ds_dp,ds_du),(du_dp,du_du)),(out,state,f_vjp) = jax.jacrev(sum_output,argnums=[1,2],has_aux=True)(graph,param,state,x)
             else:
                 grads,(out,state,f_vjp) = jax.jacrev(output,argnums=[1,2],has_aux=True)(graph,param,state,x)
-                (ds_dp,ds_du),(du_dp,du_du) = jax.tree.map(diag,grads)
+                (ds_grad),(du_dp,du_du) = jax.tree.map(diag,grads)
+                ds_dp,ds_du = jax.tree.map(lambda x: x[0],ds_grad)
+            
             ds_du, du_du = jnp.stack(jax.tree.leaves(ds_du)), jnp.stack(jax.tree.leaves(du_du))
+        
             ds_dtheta = diag_rtrl_update(ds_du,E,ds_dp)
             E = diag_rtrl_update(du_du,E,du_dp)
+
             return (out,state,E), (ds_dtheta,f_vjp)
 
         def exec_bwd(res,g):
@@ -54,7 +58,7 @@ class diag_rtrl(nnx.Module):
         return out
     
 class OTPE(nnx.Module):
-    def __init__(self, mdl, batch_sz, input_sz, leak, diagonal_sum=False):
+    def __init__(self, mdl, batch_sz, input_sz, leak, diagonal_sum=True):
         self.mdl = mdl
         graph,param,state = nnx.split(mdl,nnx.Param,...)
         E = [jax.tree.map(jnp.zeros_like,param)]*len(jax.tree.leaves(state))
@@ -78,7 +82,8 @@ class OTPE(nnx.Module):
                 ((ds_dp,ds_du),(du_dp,du_du)),(out,state,f_vjp) = jax.jacrev(sum_output,argnums=[1,2],has_aux=True)(graph,param,state,x)
             else:
                 grads,(out,state,f_vjp) = jax.jacrev(output,argnums=[1,2],has_aux=True)(graph,param,state,x)
-                (ds_dp,ds_du),(du_dp,du_du) = jax.tree.map(diag,grads)
+                (ds_grad),(du_dp,du_du) = jax.tree.map(diag,grads)
+                ds_dp,ds_du = jax.tree.map(lambda x: x[0],ds_grad)
             ds_du, du_du = jnp.stack(jax.tree.leaves(ds_du)), jnp.stack(jax.tree.leaves(du_du))
             ds_dtheta = diag_rtrl_update(ds_du,E,ds_dp)
             E = diag_rtrl_update(du_du,E,du_dp)
@@ -128,19 +133,19 @@ class OTTT(nnx.Module):
     @nnx.jit
     def __call__(self,x):
         @jax.custom_vjp
-        def exec_model(graph,param,state,a_hat,x):
+        def exec_model(graph,param,leak,state,a_hat,x):
             model = nnx.merge(graph,param,state)
             out = model(x)
             return out, nnx.split(model,nnx.Param,...)[2], a_hat
         
-        def exec(graph,param,state,a_hat,x):
+        def exec(graph,param,leak,state,a_hat,x):
             _,(out,state,f_vjp) = output(graph,param,state,x)
-            a_hat = self.leak*a_hat + x
+            a_hat = leak*a_hat + x
             return (out,state,a_hat), (a_hat,f_vjp)
         
         def apply_a_hat(g,a_hat,params):
             def use_a_hat(x):
-                if x.shape>1:
+                if len(x.shape)>1:
                     return jnp.outer(g,a_hat)
                 else:
                     return g
@@ -151,11 +156,11 @@ class OTTT(nnx.Module):
             params = nnx.split(self.mdl,nnx.Param,...)[1]
             grad = apply_a_hat(g[0],a_hat,params)
             passback = jax.tree.leaves(f_vjp(g[0]))[0]
-            return (None,grad,None,None,passback)
+            return (None,grad,None,None,None,passback)
         
         exec_model.defvjp(exec, exec_bwd)
         graph, param, state = nnx.split(self.mdl,nnx.Param,...)
-        vp_exec = partial(jax.vmap(partial(exec_model,graph,param)),state,self.a_hat.value)
+        vp_exec = partial(jax.vmap(partial(exec_model,graph,param,self.leak)),state,self.a_hat.value)
         if len(x.shape)<2:
             x = x.reshape(1,-1)
         out,state,a_hat = vp_exec(x)
