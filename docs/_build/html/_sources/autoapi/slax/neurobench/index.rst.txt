@@ -1,0 +1,20 @@
+slax.neurobench
+===============
+
+.. py:module:: slax.neurobench
+
+.. autoapi-nested-parse::
+
+   Neurobench implementation for Slax
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/slax/neurobench/benchmarks/index
+
+

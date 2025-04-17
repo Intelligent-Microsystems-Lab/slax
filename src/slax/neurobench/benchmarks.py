@@ -1,9 +1,28 @@
+""" 
+
+This module calculates basic statistics for a given set of numbers.
+
+
+
+Functions:
+
+    - calculate_mean: Calculates the arithmetic mean of a list.
+
+    - calculate_median: Finds the median value of a list.
+
+    - calculate_std_dev: Computes the standard deviation of a list.
+
+"""
+
+
+
 import sys
 from contextlib import redirect_stdout
 from tqdm import tqdm
 import jax.numpy as jnp
 
 import static_metrics, workload_metrics
+
 
 # workload metrics which require hooks
 requires_hooks = [

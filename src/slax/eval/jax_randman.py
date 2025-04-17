@@ -29,18 +29,26 @@ import jax.numpy as jnp
 
 
 class JaxRandman:
-    """ Randman (jax version) objects hold the parameters for a smooth random manifold from which datapoints can be sampled. """
+    """ Randman (jax version) objects hold the parameters for a smooth random manifold from which datapoints can be sampled.
+    
+        Args:
+            embedding_dim : The embedding space dimension
+            manifold_dim : The manifold dimension
+            alpha : The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)
+            use_bias: If True, manifolds are placed at random offset coordinates within a [0,1] simplex.
+            prec: The precision paramter to determine the maximum frequency cutoff (default 1e-3)
+        """
+
     
     def __init__(self, embedding_dim, manifold_dim, alpha=2, beta=0, prec=1e-3, max_f_cutoff=1000, use_bias=False, seed=0, dtype=jnp.float32):
         """ Initializes a randman object.
         
-        Args
-        ----
-        embedding_dim : The embedding space dimension
-        manifold_dim : The manifold dimension
-        alpha : The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)
-        use_bias: If True, manifolds are placed at random offset coordinates within a [0,1] simplex.
-        prec: The precision paramter to determine the maximum frequency cutoff (default 1e-3)
+        Args:
+            embedding_dim : The embedding space dimension
+            manifold_dim : The manifold dimension
+            alpha : The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)
+            use_bias: If True, manifolds are placed at random offset coordinates within a [0,1] simplex.
+            prec: The precision paramter to determine the maximum frequency cutoff (default 1e-3)
         """
 
         self.alpha = alpha

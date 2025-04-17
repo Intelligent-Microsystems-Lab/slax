@@ -6,8 +6,8 @@ from typing import Any, Sequence
 from jax.tree_util import Partial, tree_leaves, tree_map
 from jax.lax import stop_gradient as stop_grad
 from jax.flatten_util import ravel_pytree
-from ..models.utils import reinit_model, connect, RNN
-from .helpers import output, sum_output, diag, diag_rtrl_update, rtrl_update
+from slax.model.utils import reinit_model, connect, RNN
+from slax.train.helpers import output, sum_output, diag, diag_rtrl_update, rtrl_update
 from functools import partial
 
 
@@ -127,7 +127,7 @@ class OTTT(nnx.Module):
     '''
     def __init__(self, mdl, input_sz, leak):
         self.mdl = mdl
-        self.leak = leak
+        self.leak = nnx.Variable(leak)
         self.a_hat = nnx.Variable(jnp.zeros(input_sz))
 
     @nnx.jit
@@ -160,7 +160,7 @@ class OTTT(nnx.Module):
         
         exec_model.defvjp(exec, exec_bwd)
         graph, param, state = nnx.split(self.mdl,nnx.Param,...)
-        vp_exec = partial(jax.vmap(partial(exec_model,graph,param,self.leak)),state,self.a_hat.value)
+        vp_exec = partial(jax.vmap(partial(exec_model,graph,param,self.leak.value)),state,self.a_hat.value)
         if len(x.shape)<2:
             x = x.reshape(1,-1)
         out,state,a_hat = vp_exec(x)

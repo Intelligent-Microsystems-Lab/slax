@@ -16,7 +16,7 @@
 import jax
 import jax.numpy as jnp
 from jax.tree_util import Partial
-from .jax_randman import JaxRandman as Randman
+from slax.eval.jax_randman import JaxRandman as Randman
 
 def standardize(x,eps=1e-7):
     mi = x.min(0)
@@ -97,7 +97,7 @@ def randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=10
         points = jnp.tile(jnp.int32(jnp.floor(data*nb_steps)),(nb_steps,1,1))
         vals = jnp.tile(jnp.arange(nb_steps),(nb_classes*nb_samples,nb_units,1)).transpose(2,0,1)
         data = jnp.where(vals<=points,1,0)
-        data = jax.random.permutation(sample_key,data,axis=0,independent=True)
+        data = jax.random.permutation(sample_key,data,axis=0,independent=False)
         labels = jnp.tile(jax.nn.one_hot(labels,nb_classes),(nb_steps,1,1))
 
     if batch_sz == None:

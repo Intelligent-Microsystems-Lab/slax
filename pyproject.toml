@@ -1,6 +1,6 @@
 [project]
 name = "slax"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Thomas Summe", email="tsumme@nd.edu" },
 ]
@@ -13,11 +13,12 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-"flax >= 0.7.1",
+"flax >= 0.8.0",
 "optax",
 "scikit-learn",
 "matplotlib",
 "jax",
+"nir",
 ]
 
 [project.urls]

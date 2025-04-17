@@ -129,12 +129,12 @@ def make_ones_copy(layer):
     return layer_copy
 
 
-def cylce_tuple(tup):
+def cycle_tuple(tup):
     """Returns a copy of the tuple with binary elements."""
     tup_copy = []
     for t in tup:
         if isinstance(t, tuple):
-            tup_copy.append(cylce_tuple(t))
+            tup_copy.append(cycle_tuple(t))
         elif t is not None:
             t = t.detach().clone()
             t[t != 0] = 1
@@ -142,12 +142,12 @@ def cylce_tuple(tup):
     return tuple(tup_copy)
 
 
-def cylce_tuple_ones(tup):
+def cycle_tuple_ones(tup):
     """Returns a copy of the tuple with ones elements."""
     tup_copy = []
     for t in tup:
         if isinstance(t, tuple):
-            tup_copy.append(cylce_tuple(t))
+            tup_copy.append(cycle_tuple(t))
         elif t is not None:
             t = t.detach().clone()
             t[t != 0] = 1
@@ -172,9 +172,9 @@ def binary_inputs(inputs, all_ones=False):
             if len(test_ins[(test_ins != 0) & (test_ins != 1) & (test_ins != -1)]) == 0:
                 spiking = True
             if not all_ones:
-                inputs = cylce_tuple(inputs)
+                inputs = cycle_tuple(inputs)
             else:
-                inputs = cylce_tuple_ones(inputs)
+                inputs = cycle_tuple_ones(inputs)
         else:
             # clone tensor since it may be used as input to other layers
             inputs = inputs.detach().clone()

@@ -5,8 +5,8 @@ from flax import nnx
 import numpy as np
 import nir
 from typing import Any, Callable
-from .surrogates import fast_sigmoid, multi_gauss
-from .utils import reinit_model, Neuron
+from slax.model.surrogate import fast_sigmoid, multi_gauss
+from slax.model.utils import reinit_model, Neuron
 
 class LIF(Neuron):
     '''
@@ -25,18 +25,24 @@ class LIF(Neuron):
     carry_init: Initializer for the carry state
     dtype: Data type of the membrane potential. This only matters if you use "initialize_carry". Defaults to float32
     '''
-    def __init__(self,size,init_tau=2.,spike_fn=fast_sigmoid(),v_threshold=1.0,v_reset=0.0,subtraction_reset=True,train_tau=False,carry_init=jnp.zeros,stop_du_ds=False,dtype=jnp.float32):
+    def __init__(self,size=1,init_tau=2.,spike_fn=fast_sigmoid(),v_threshold=1.0,v_reset=0.0,subtraction_reset=True,train_tau=False,
+                 carry_init=jnp.zeros,stop_du_ds=False,output_Vmem=False,no_reset=False,dtype=jnp.float32):
         self.Vmem = nnx.Variable(carry_init(size))
         if train_tau:
             self.tau = nnx.Param(init_tau)
         else:
             self.tau = init_tau
         self.size = size
+        self.out_features = size
         self.spike_fn = spike_fn
         self.v_threshold = v_threshold
         self.v_reset = v_reset
         self.subtraction_reset = subtraction_reset
         self.train_tau = train_tau
+        self.stop_du_ds = stop_du_ds
+        self.output_Vmem = output_Vmem
+        self.dtype = dtype
+        self.no_reset = no_reset
         
     def __call__(self,x):
         if self.train_tau:
@@ -44,11 +50,17 @@ class LIF(Neuron):
         else:
             self.Vmem.value = nn.sigmoid(self.tau)*self.Vmem.value + x
         spikes = self.spike_fn(self.Vmem.value-self.v_threshold)
-        if self.subtraction_reset:
-            self.Vmem.value -= spikes*self.v_threshold
+
+        if not self.no_reset:
+            if self.subtraction_reset:
+                self.Vmem.value -= spikes*self.v_threshold
+            else:
+                self.Vmem.value = self.Vmem.value*(1-spikes) + self.v_reset*spikes
+
+        if self.output_Vmem:
+            return self.Vmem.value
         else:
-            self.Vmem.value = self.Vmem.value*(1-spikes) + self.v_reset*spikes
-        return spikes
+            return spikes
         
     def output_nir(self):
         dt = 1e-4

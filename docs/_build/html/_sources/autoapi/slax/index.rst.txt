@@ -1,0 +1,372 @@
+slax
+====
+
+.. py:module:: slax
+
+.. autoapi-nested-parse::
+
+   Slax docs
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/slax/eval/index
+   /autoapi/slax/model/index
+   /autoapi/slax/neurobench/index
+   /autoapi/slax/nir/index
+   /autoapi/slax/train/index
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   slax.LIF
+   slax.RNN
+   slax.train_online_deferred
+   slax.train_online
+   slax.FPTT
+   slax.train_offline
+   slax.Neuron
+   slax.connect
+   slax.RNN
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   slax.randman
+   slax.gen_loss_landscape
+   slax.fast_sigmoid
+   slax.atan
+   slax.multi_gauss
+   slax.layerwise_cosine_similarity
+   slax.global_cosine_similarity
+   slax.compare_grads
+
+
+Package Contents
+----------------
+
+.. py:class:: LIF(size=1, init_tau=2.0, spike_fn=fast_sigmoid(), v_threshold=1.0, v_reset=0.0, subtraction_reset=True, train_tau=False, carry_init=jnp.zeros, stop_du_ds=False, output_Vmem=False, no_reset=False, dtype=jnp.float32)
+
+   Bases: :py:obj:`slax.model.utils.Neuron`
+
+
+   A module for the Leaky Integrate-and-Fire neuron.
+
+   Args:
+   shape: The input shape as an integer or tuple
+   init_tau: A float or array for the initial leak parameter, which is calculated as sigmoid(init_tau)
+   spike_fn: The surrogate spike function, such as fast sigmoid, used in place Heaviside step function
+   v_threshold: The membrane potential threshold for spiking. Defaults to 1.0
+   v_reset: If the neuron uses a hard reset rather than subtraction-based reset after a spike, the membrane potential returns
+   to this value. Defaults to 0.0
+   subtraction_reset: Whether the neuron subtracts "1." from the membrane potential after a spike or resets to v_reset.
+   Defaults to True
+   trainable_tau: Whether the leak parameter is learnable parameter. Defaults to False
+   carry_init: Initializer for the carry state
+   dtype: Data type of the membrane potential. This only matters if you use "initialize_carry". Defaults to float32
+
+
+.. py:function:: randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=100, dim_manifold=2, nb_spikes=1, nb_samples=1000, alpha=2.0, shuffle=True, time_encode=True, batch_sz=None, dtype=jnp.float32)
+
+   Adapted from https://github.com/fzenke/randman.
+   If using this, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.
+
+   Generates event-based generalized spiking randman classification dataset.
+   In this dataset each unit fires a fixed number of spikes. If information is set to be encoded in time, then only
+   nb_spikes occurs per neuron for each trial at a specific time, which precludes rate/count based learning. If encoded
+   in the spike rate/count, then the number of spikes each neuron generates encodes information while spike times are random.
+   :param manifold_seed: The JAX PRNG key that determines the random manifolds
+   :param random_seed: The JAX PRNG random seed, which determines random elements such as sampling from the manifold.
+   :param nb_classes: The number of classes to generate. Defaults to 10
+   :param nb_units: The number of units to assume. Defaults to 100
+   :param nb_steps: The number of time steps to assume. Defaults to 100
+   :param dim_manifold: The dimensionality of the hypercube the random manifold is generated along. Defaults to 2
+   :param nb_spikes: The number of spikes per unit. Defaults to 1
+   :param nb_samples: Number of samples from each manifold per class. Defaults to 1_000
+   :param alpha: Randman smoothness parameter. Defaults to 2.0
+   :param shuffe: Whether to shuffle the dataset. Defaults to True
+   :param time_encode: Whether to encode information in spike timeing (alternative being rate/count). Defaults to True
+   :param batch_sz: The size of the batch dimension. Defaults to None
+   :param dtype: The data type of the output spikes and labels. Defaults to float32
+
+
+.. py:function:: gen_loss_landscape(get_loss, load_params, n_iter, n_models=1)
+
+   Generates a loss landscape plot from saved saved parameters throughout training.
+
+   Args:
+   get_loss: A function that takes in the model parameters and outputs a scalar loss
+   load_params: A function that takes which number to load and outputs the parameters in a list
+   n_iter: number of saved parameter checkpoints
+   n_models: number of models to plot on the loss landscape
+
+
+.. py:function:: fast_sigmoid(slope=25)
+
+   A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the fast-sigmoid
+   function from Zenke, F., & Ganguli, S. (2018). Superspike: Supervised learning in multilayer spiking neural networks. Neural computation, 30(6), 1514-1541.
+
+   Args:
+   slope: The sharpness factor of the fast sigmoid function
+
+
+.. py:function:: atan(alpha=2.0)
+
+   A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Arctangent
+   function from Fang, W., Yu, Z., Chen, Y., Masquelier, T., Huang, T., & Tian, Y. (2021). Incorporating learnable membrane time constant to enhance learning of spiking neural networks. In Proceedings of the IEEE/CVF international conference on computer vision (pp. 2661-2671).
+
+   Args:
+   alpha: The sharpness factor of the fast sigmoid function
+
+
+.. py:function:: multi_gauss(gamma=0.5, lens=0.3, scale=6.0, height=0.15)
+
+   A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Multi-Gaussian
+   function from Yin, B., Corradi, F., & Bohté, S. M. (2021). Accurate and efficient time-domain classification with adaptive spiking recurrent neural networks. Nature Machine Intelligence, 3(10), 905-913.
+
+
+.. py:function:: layerwise_cosine_similarity(pytree_0, pytree_1)
+
+   Computes the cosine similarity of each item between two pytrees with the same structure.
+
+   :param pytree_0: The first pytree with the same structure as pytree_1
+   :param pytree_1: The second pytree with the same structure as pytree_0
+
+   :returns: A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
+
+
+.. py:function:: global_cosine_similarity(pytree_0, pytree_1)
+
+   Computes the cosine similarity of all elements between two pytrees.
+
+   :param pytree_0: The first pytree
+   :param pytree_1: The second pytree
+
+   :returns: A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
+
+
+.. py:function:: compare_grads(train_func, reference_params, reference_grad, train_func_args, comparison_func=layerwise_cosine_similarity)
+
+   Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using
+   a given training function and its arguments.
+
+   :param train_func: The returned function from calling `train_online_deffered` or a similar function with the same inputs
+   :param and outputs:
+   :param reference_params: A pytree of the reference parameters
+   :param reference_grad: A pytree of the reference gradients
+   :param train_func_args: A tuple of the arguments for `train_func` (params,carry,batch,opt_state)
+   :param comparison_func: A function that takes in two pytrees and performs some comparison operation. Defaults to `layerwise_cosine_similarity'
+
+   :returns: The output of comparison_func
+
+
+.. py:class:: RNN(mdl, unroll=jnp.iinfo(jnp.uint32).max, broadcast_state=True)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+   Applies a provided model or module over a sequence.
+
+   Args:
+   model: The model to apply of the sequence
+   xs: Input data
+   unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at the cost of compilation time.
+   broadcast_state: If true, executes the first time step outside of the loop
+
+   Returns:
+   A model/module that loops over the first axis of its input
+
+
+.. py:class:: train_online_deferred(snnModel, loss_fn, optimizer, unroll=False)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   A helper tool for easily implementing an online training loop where parameter updates are saved till the end.
+
+   Args:
+   snnModel: An initializes Flax module
+   loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+   either an array to averaged or a scalar loss value.
+   optimizer: An initialized optax optimizer
+
+
+   .. py:method:: __call__(batch)
+
+      Args:
+      batch: Tuple of the input and labels
+
+
+
+.. py:class:: train_online(snnModel, loss_fn, optimizer, unroll=False, reset_state=True, loss_aux=False)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.
+
+   Args:
+   snnModel: An initializes Flax module
+   loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+   either an array to averaged or a scalar loss value.
+   optimizer: An initialized optax optimizer
+
+
+   .. py:method:: __call__(batch)
+
+      Args:
+      batch: Tuple of the input and labels
+
+
+
+.. py:class:: FPTT(snnModel, loss_fn, optimizer, alpha=0.5, unroll=False, reset_state=True)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.
+
+   Args:
+   snnModel: An initializes Flax module
+   loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+   either an array to averaged or a scalar loss value.
+   optimizer: An initialized optax optimizer
+
+
+   .. py:method:: __call__(batch)
+
+      Args:
+      batch: Tuple of the input and labels
+
+
+
+.. py:class:: train_offline(snnModel, loss_fn, optimizer, unroll=False, scan=True)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   A helper tool for easily implementing an online training loop where parameter updates are saved till the end.
+
+   Args:
+   snnModel: An initializes Flax module
+   loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+   either an array to averaged or a scalar loss value.
+   optimizer: An initialized optax optimizer
+
+
+   .. py:method:: __call__(batch)
+
+      Args:
+      batch: Tuple of the input and labels
+
+
+
+.. py:class:: Neuron
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   SNN base class.
+
+
+.. py:class:: connect(chains, cat=None)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   Connects modules together while optionally specifying skip and recurrent connections.
+
+   Args:
+   chains: A list of modules
+   cat: A dictionary for skip/recurrent connections where each key is a number corresponding to the list index and the values are what it additionally feed to.
+
+   Returns:
+   A module that sequentially connects the provides modules and adds any additionally specified connections.
+
+
+.. py:class:: RNN(mdl, unroll=jnp.iinfo(jnp.uint32).max, broadcast_state=True)
+
+   Bases: :py:obj:`flax.nnx.Module`
+
+
+   Base class for all neural network modules.
+
+   Layers and models should subclass this class.
+
+   ``Module``'s can contain submodules, and in this way can be nested in a tree
+   structure. Submodules can be assigned as regular attributes inside the
+   ``__init__`` method.
+
+   You can define arbitrary "forward pass" methods on your ``Module`` subclass.
+   While no methods are special-cased, ``__call__`` is a popular choice since
+   you can call the ``Module`` directly::
+
+     >>> from flax import nnx
+     >>> import jax.numpy as jnp
+
+     >>> class Model(nnx.Module):
+     ...   def __init__(self, rngs):
+     ...     self.linear1 = nnx.Linear(2, 3, rngs=rngs)
+     ...     self.linear2 = nnx.Linear(3, 4, rngs=rngs)
+     ...   def __call__(self, x):
+     ...     x = self.linear1(x)
+     ...     x = nnx.relu(x)
+     ...     x = self.linear2(x)
+     ...     return x
+
+     >>> x = jnp.ones((1, 2))
+     >>> model = Model(rngs=nnx.Rngs(0))
+     >>> y = model(x)
+
+   Applies a provided model or module over a sequence.
+
+   Args:
+   model: The model to apply of the sequence
+   xs: Input data
+   unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at the cost of compilation time.
+   broadcast_state: If true, executes the first time step outside of the loop
+
+   Returns:
+   A model/module that loops over the first axis of its input
+
+

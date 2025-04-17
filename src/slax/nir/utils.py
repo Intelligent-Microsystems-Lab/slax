@@ -3,7 +3,7 @@ import numpy as np
 from flax import nnx
 from functools import partial
 import jax.numpy as jnp
-from ..models.neurons import LIF
+from ..model.neuron import LIF
 
 
 def nir_dense(mdl):

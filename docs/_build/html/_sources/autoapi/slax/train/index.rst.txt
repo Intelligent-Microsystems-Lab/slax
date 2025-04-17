@@ -1,0 +1,11 @@
+slax.train
+==========
+
+.. py:module:: slax.train
+
+.. autoapi-nested-parse::
+
+   Training methods and helpers for Slax
+
+
+

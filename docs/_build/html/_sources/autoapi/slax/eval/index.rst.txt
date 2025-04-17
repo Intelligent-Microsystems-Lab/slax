@@ -1,0 +1,134 @@
+slax.eval
+=========
+
+.. py:module:: slax.eval
+
+.. autoapi-nested-parse::
+
+   Evaluation module for Slax.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   slax.eval.Randman
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   slax.eval.gen_loss_landscape
+   slax.eval.randman
+   slax.eval.layerwise_cosine_similarity
+   slax.eval.global_cosine_similarity
+   slax.eval.compare_grads
+
+
+Package Contents
+----------------
+
+.. py:function:: gen_loss_landscape(get_loss, load_params, n_iter, n_models=1)
+
+   Generates a loss landscape plot from saved saved parameters throughout training.
+
+   Args:
+   get_loss: A function that takes in the model parameters and outputs a scalar loss
+   load_params: A function that takes which number to load and outputs the parameters in a list
+   n_iter: number of saved parameter checkpoints
+   n_models: number of models to plot on the loss landscape
+
+
+.. py:class:: Randman(embedding_dim, manifold_dim, alpha=2, beta=0, prec=0.001, max_f_cutoff=1000, use_bias=False, seed=0, dtype=jnp.float32)
+
+   Randman (jax version) objects hold the parameters for a smooth random manifold from which datapoints can be sampled.
+
+   :param embedding_dim: The embedding space dimension
+   :param manifold_dim: The manifold dimension
+   :param alpha: The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)
+   :param use_bias: If True, manifolds are placed at random offset coordinates within a [0,1] simplex.
+   :param prec: The precision paramter to determine the maximum frequency cutoff (default 1e-3)
+
+   Initializes a randman object.
+
+   :param embedding_dim: The embedding space dimension
+   :param manifold_dim: The manifold dimension
+   :param alpha: The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)
+   :param use_bias: If True, manifolds are placed at random offset coordinates within a [0,1] simplex.
+   :param prec: The precision paramter to determine the maximum frequency cutoff (default 1e-3)
+
+
+   .. py:method:: init_spect(alpha=2.0, res=0)
+
+      Sets up power spectrum modulation
+
+      :param alpha:
+      :type alpha: Power law decay exponent of power spectrum
+      :param res:
+      :type res: Peak value of power spectrum.
+
+
+
+.. py:function:: randman(manifold_seed, random_seed, nb_classes=10, nb_units=100, nb_steps=100, dim_manifold=2, nb_spikes=1, nb_samples=1000, alpha=2.0, shuffle=True, time_encode=True, batch_sz=None, dtype=jnp.float32)
+
+   Adapted from https://github.com/fzenke/randman.
+   If using this, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.
+
+   Generates event-based generalized spiking randman classification dataset.
+   In this dataset each unit fires a fixed number of spikes. If information is set to be encoded in time, then only
+   nb_spikes occurs per neuron for each trial at a specific time, which precludes rate/count based learning. If encoded
+   in the spike rate/count, then the number of spikes each neuron generates encodes information while spike times are random.
+   :param manifold_seed: The JAX PRNG key that determines the random manifolds
+   :param random_seed: The JAX PRNG random seed, which determines random elements such as sampling from the manifold.
+   :param nb_classes: The number of classes to generate. Defaults to 10
+   :param nb_units: The number of units to assume. Defaults to 100
+   :param nb_steps: The number of time steps to assume. Defaults to 100
+   :param dim_manifold: The dimensionality of the hypercube the random manifold is generated along. Defaults to 2
+   :param nb_spikes: The number of spikes per unit. Defaults to 1
+   :param nb_samples: Number of samples from each manifold per class. Defaults to 1_000
+   :param alpha: Randman smoothness parameter. Defaults to 2.0
+   :param shuffe: Whether to shuffle the dataset. Defaults to True
+   :param time_encode: Whether to encode information in spike timeing (alternative being rate/count). Defaults to True
+   :param batch_sz: The size of the batch dimension. Defaults to None
+   :param dtype: The data type of the output spikes and labels. Defaults to float32
+
+
+.. py:function:: layerwise_cosine_similarity(pytree_0, pytree_1)
+
+   Computes the cosine similarity of each item between two pytrees with the same structure.
+
+   :param pytree_0: The first pytree with the same structure as pytree_1
+   :param pytree_1: The second pytree with the same structure as pytree_0
+
+   :returns: A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
+
+
+.. py:function:: global_cosine_similarity(pytree_0, pytree_1)
+
+   Computes the cosine similarity of all elements between two pytrees.
+
+   :param pytree_0: The first pytree
+   :param pytree_1: The second pytree
+
+   :returns: A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.
+
+
+.. py:function:: compare_grads(train_func, reference_params, reference_grad, train_func_args, comparison_func=layerwise_cosine_similarity)
+
+   Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using
+   a given training function and its arguments.
+
+   :param train_func: The returned function from calling `train_online_deffered` or a similar function with the same inputs
+   :param and outputs:
+   :param reference_params: A pytree of the reference parameters
+   :param reference_grad: A pytree of the reference gradients
+   :param train_func_args: A tuple of the arguments for `train_func` (params,carry,batch,opt_state)
+   :param comparison_func: A function that takes in two pytrees and performs some comparison operation. Defaults to `layerwise_cosine_similarity'
+
+   :returns: The output of comparison_func
+
+

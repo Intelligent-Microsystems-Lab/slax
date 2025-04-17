@@ -1,0 +1,67 @@
+slax.neurobench.benchmarks
+==========================
+
+.. py:module:: slax.neurobench.benchmarks
+
+.. autoapi-nested-parse::
+
+   This module calculates basic statistics for a given set of numbers.
+
+
+
+   Functions:
+
+       - calculate_mean: Calculates the arithmetic mean of a list.
+
+       - calculate_median: Finds the median value of a list.
+
+       - calculate_std_dev: Computes the standard deviation of a list.
+
+
+
+Classes
+-------
+
+.. autoapisummary::
+
+   slax.neurobench.benchmarks.Benchmark
+
+
+Module Contents
+---------------
+
+.. py:class:: Benchmark(model, dataloader, preprocessors, postprocessors, metric_list)
+
+   Top-level benchmark class for running benchmarks.
+
+   :param model: A NeuroBenchModel.
+   :param dataloader: A PyTorch DataLoader.
+   :param preprocessors: A list of NeuroBenchPreProcessors.
+   :param postprocessors: A list of NeuroBenchPostProcessors.
+   :param metric_list: A list of lists of strings of metrics to run.
+                       First item is static metrics, second item is data metrics.
+
+
+   .. py:method:: run(quiet=False, verbose: bool = False, dataloader=None, preprocessors=None, postprocessors=None, device=None)
+
+      Runs batched evaluation of the benchmark.
+
+      :param dataloader: override DataLoader for this run.
+      :type dataloader: optional
+      :param preprocessors: override preprocessors for this run.
+      :type preprocessors: optional
+      :param postprocessors: override postprocessors for this run.
+      :type postprocessors: optional
+      :param quiet: If True, output is suppressed.
+      :type quiet: bool, default=False
+      :param verbose: If True, metrics for each bach will be printed.
+                      If False (default), metrics are accumulated and printed after all batches are processed.
+      :type verbose: bool, default=False
+      :param device: use device for this run (e.g. 'cuda' or 'cpu').
+      :type device: optional
+
+      :returns: A dictionary of results.
+      :rtype: results
+
+
+

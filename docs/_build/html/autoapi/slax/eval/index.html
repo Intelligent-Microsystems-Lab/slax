@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>slax.eval &#8212; Slax 0.0.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="slax.model" href="../model/index.html" />
+    <link rel="prev" title="slax" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-slax.eval">
+<span id="slax-eval"></span><h1>slax.eval<a class="headerlink" href="#module-slax.eval" title="Link to this heading">¶</a></h1>
+<p>Evaluation module for Slax.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.eval.Randman" title="slax.eval.Randman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Randman</span></code></a></p></td>
+<td><p>Randman (jax version) objects hold the parameters for a smooth random manifold from which datapoints can be sampled.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.eval.gen_loss_landscape" title="slax.eval.gen_loss_landscape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gen_loss_landscape</span></code></a>(get_loss, load_params, n_iter[, ...])</p></td>
+<td><p>Generates a loss landscape plot from saved saved parameters throughout training.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.eval.randman" title="slax.eval.randman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">randman</span></code></a>(manifold_seed, random_seed[, nb_classes, ...])</p></td>
+<td><p>Adapted from <a class="reference external" href="https://github.com/fzenke/randman">https://github.com/fzenke/randman</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.eval.layerwise_cosine_similarity" title="slax.eval.layerwise_cosine_similarity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">layerwise_cosine_similarity</span></code></a>(pytree_0, pytree_1)</p></td>
+<td><p>Computes the cosine similarity of each item between two pytrees with the same structure.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.eval.global_cosine_similarity" title="slax.eval.global_cosine_similarity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_cosine_similarity</span></code></a>(pytree_0, pytree_1)</p></td>
+<td><p>Computes the cosine similarity of all elements between two pytrees.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.eval.compare_grads" title="slax.eval.compare_grads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_grads</span></code></a>(train_func, reference_params, ...[, ...])</p></td>
+<td><p>Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.eval.gen_loss_landscape">
+<span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">gen_loss_landscape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">get_loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.gen_loss_landscape" title="Link to this definition">¶</a></dt>
+<dd><p>Generates a loss landscape plot from saved saved parameters throughout training.</p>
+<p>Args:
+get_loss: A function that takes in the model parameters and outputs a scalar loss
+load_params: A function that takes which number to load and outputs the parameters in a list
+n_iter: number of saved parameter checkpoints
+n_models: number of models to plot on the loss landscape</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.eval.Randman">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">Randman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embedding_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manifold_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_f_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.Randman" title="Link to this definition">¶</a></dt>
+<dd><p>Randman (jax version) objects hold the parameters for a smooth random manifold from which datapoints can be sampled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embedding_dim</strong> – The embedding space dimension</p></li>
+<li><p><strong>manifold_dim</strong> – The manifold dimension</p></li>
+<li><p><strong>alpha</strong> – The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)</p></li>
+<li><p><strong>use_bias</strong> – If True, manifolds are placed at random offset coordinates within a [0,1] simplex.</p></li>
+<li><p><strong>prec</strong> – The precision paramter to determine the maximum frequency cutoff (default 1e-3)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Initializes a randman object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embedding_dim</strong> – The embedding space dimension</p></li>
+<li><p><strong>manifold_dim</strong> – The manifold dimension</p></li>
+<li><p><strong>alpha</strong> – The power spectrum fall-off exponenent. Determines the smoothenss of the manifold (default 2)</p></li>
+<li><p><strong>use_bias</strong> – If True, manifolds are placed at random offset coordinates within a [0,1] simplex.</p></li>
+<li><p><strong>prec</strong> – The precision paramter to determine the maximum frequency cutoff (default 1e-3)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="slax.eval.Randman.init_spect">
+<span class="sig-name descname"><span class="pre">init_spect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">res</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.Randman.init_spect" title="Link to this definition">¶</a></dt>
+<dd><p>Sets up power spectrum modulation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<em>Power law decay exponent</em><em> of </em><em>power spectrum</em>)</p></li>
+<li><p><strong>res</strong> (<em>Peak value</em><em> of </em><em>power spectrum.</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.eval.randman">
+<span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">randman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifold_seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_classes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_manifold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_encode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_sz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.randman" title="Link to this definition">¶</a></dt>
+<dd><p>Adapted from <a class="reference external" href="https://github.com/fzenke/randman">https://github.com/fzenke/randman</a>.
+If using this, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.</p>
+<p>Generates event-based generalized spiking randman classification dataset.
+In this dataset each unit fires a fixed number of spikes. If information is set to be encoded in time, then only
+nb_spikes occurs per neuron for each trial at a specific time, which precludes rate/count based learning. If encoded
+in the spike rate/count, then the number of spikes each neuron generates encodes information while spike times are random.
+:param manifold_seed: The JAX PRNG key that determines the random manifolds
+:param random_seed: The JAX PRNG random seed, which determines random elements such as sampling from the manifold.
+:param nb_classes: The number of classes to generate. Defaults to 10
+:param nb_units: The number of units to assume. Defaults to 100
+:param nb_steps: The number of time steps to assume. Defaults to 100
+:param dim_manifold: The dimensionality of the hypercube the random manifold is generated along. Defaults to 2
+:param nb_spikes: The number of spikes per unit. Defaults to 1
+:param nb_samples: Number of samples from each manifold per class. Defaults to 1_000
+:param alpha: Randman smoothness parameter. Defaults to 2.0
+:param shuffe: Whether to shuffle the dataset. Defaults to True
+:param time_encode: Whether to encode information in spike timeing (alternative being rate/count). Defaults to True
+:param batch_sz: The size of the batch dimension. Defaults to None
+:param dtype: The data type of the output spikes and labels. Defaults to float32</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.eval.layerwise_cosine_similarity">
+<span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">layerwise_cosine_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pytree_0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pytree_1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.layerwise_cosine_similarity" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the cosine similarity of each item between two pytrees with the same structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pytree_0</strong> – The first pytree with the same structure as pytree_1</p></li>
+<li><p><strong>pytree_1</strong> – The second pytree with the same structure as pytree_0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.eval.global_cosine_similarity">
+<span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">global_cosine_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pytree_0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pytree_1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.global_cosine_similarity" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the cosine similarity of all elements between two pytrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pytree_0</strong> – The first pytree</p></li>
+<li><p><strong>pytree_1</strong> – The second pytree</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.eval.compare_grads">
+<span class="sig-prename descclassname"><span class="pre">slax.eval.</span></span><span class="sig-name descname"><span class="pre">compare_grads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_grad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">layerwise_cosine_similarity</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.eval.compare_grads" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using
+a given training function and its arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_func</strong> – The returned function from calling <cite>train_online_deffered</cite> or a similar function with the same inputs</p></li>
+<li><p><strong>outputs</strong> (<em>and</em>)</p></li>
+<li><p><strong>reference_params</strong> – A pytree of the reference parameters</p></li>
+<li><p><strong>reference_grad</strong> – A pytree of the reference gradients</p></li>
+<li><p><strong>train_func_args</strong> – A tuple of the arguments for <cite>train_func</cite> (params,carry,batch,opt_state)</p></li>
+<li><p><strong>comparison_func</strong> – A function that takes in two pytrees and performs some comparison operation. Defaults to <a href="#id1"><span class="problematic" id="id2">`</span></a>layerwise_cosine_similarity’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The output of comparison_func</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Slax</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">slax</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">API Reference</a><ul>
+  <li><a href="../index.html">slax</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">slax</a></li>
+      <li>Next: <a href="../model/index.html" title="next chapter">slax.model</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Thomas Summe.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../../../_sources/autoapi/slax/eval/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>slax &#8212; Slax 0.0.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <script src="../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="slax.eval" href="eval/index.html" />
+    <link rel="prev" title="API Reference" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-slax">
+<span id="slax"></span><h1>slax<a class="headerlink" href="#module-slax" title="Link to this heading">¶</a></h1>
+<p>Slax docs</p>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="eval/index.html">slax.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model/index.html">slax.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="neurobench/index.html">slax.neurobench</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nir/index.html">slax.nir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train/index.html">slax.train</a></li>
+</ul>
+</div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.LIF" title="slax.LIF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LIF</span></code></a></p></td>
+<td><p>A module for the Leaky Integrate-and-Fire neuron.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#id0" title="slax.RNN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RNN</span></code></a></p></td>
+<td><p>Base class for all neural network modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.train_online_deferred" title="slax.train_online_deferred"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_online_deferred</span></code></a></p></td>
+<td><p>A helper tool for easily implementing an online training loop where parameter updates are saved till the end.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.train_online" title="slax.train_online"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_online</span></code></a></p></td>
+<td><p>A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.FPTT" title="slax.FPTT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FPTT</span></code></a></p></td>
+<td><p>A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.train_offline" title="slax.train_offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">train_offline</span></code></a></p></td>
+<td><p>A helper tool for easily implementing an online training loop where parameter updates are saved till the end.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.Neuron" title="slax.Neuron"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Neuron</span></code></a></p></td>
+<td><p>SNN base class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.connect" title="slax.connect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connect</span></code></a></p></td>
+<td><p>Connects modules together while optionally specifying skip and recurrent connections.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#id0" title="slax.RNN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RNN</span></code></a></p></td>
+<td><p>Base class for all neural network modules.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.randman" title="slax.randman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">randman</span></code></a>(manifold_seed, random_seed[, nb_classes, ...])</p></td>
+<td><p>Adapted from <a class="reference external" href="https://github.com/fzenke/randman">https://github.com/fzenke/randman</a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.gen_loss_landscape" title="slax.gen_loss_landscape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gen_loss_landscape</span></code></a>(get_loss, load_params, n_iter[, ...])</p></td>
+<td><p>Generates a loss landscape plot from saved saved parameters throughout training.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.fast_sigmoid" title="slax.fast_sigmoid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fast_sigmoid</span></code></a>([slope])</p></td>
+<td><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the fast-sigmoid</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.atan" title="slax.atan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">atan</span></code></a>([alpha])</p></td>
+<td><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Arctangent</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.multi_gauss" title="slax.multi_gauss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_gauss</span></code></a>([gamma, lens, scale, height])</p></td>
+<td><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Multi-Gaussian</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.layerwise_cosine_similarity" title="slax.layerwise_cosine_similarity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">layerwise_cosine_similarity</span></code></a>(pytree_0, pytree_1)</p></td>
+<td><p>Computes the cosine similarity of each item between two pytrees with the same structure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#slax.global_cosine_similarity" title="slax.global_cosine_similarity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">global_cosine_similarity</span></code></a>(pytree_0, pytree_1)</p></td>
+<td><p>Computes the cosine similarity of all elements between two pytrees.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#slax.compare_grads" title="slax.compare_grads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compare_grads</span></code></a>(train_func, reference_params, ...[, ...])</p></td>
+<td><p>Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.LIF">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">LIF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">fast_sigmoid()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_reset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtraction_reset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">carry_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.zeros</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_du_ds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_Vmem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_reset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.LIF" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">slax.model.utils.Neuron</span></code></p>
+<p>A module for the Leaky Integrate-and-Fire neuron.</p>
+<p>Args:
+shape: The input shape as an integer or tuple
+init_tau: A float or array for the initial leak parameter, which is calculated as sigmoid(init_tau)
+spike_fn: The surrogate spike function, such as fast sigmoid, used in place Heaviside step function
+v_threshold: The membrane potential threshold for spiking. Defaults to 1.0
+v_reset: If the neuron uses a hard reset rather than subtraction-based reset after a spike, the membrane potential returns
+to this value. Defaults to 0.0
+subtraction_reset: Whether the neuron subtracts “1.” from the membrane potential after a spike or resets to v_reset.
+Defaults to True
+trainable_tau: Whether the leak parameter is learnable parameter. Defaults to False
+carry_init: Initializer for the carry state
+dtype: Data type of the membrane potential. This only matters if you use “initialize_carry”. Defaults to float32</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.randman">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">randman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manifold_seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_classes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_manifold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nb_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_encode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_sz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.float32</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.randman" title="Link to this definition">¶</a></dt>
+<dd><p>Adapted from <a class="reference external" href="https://github.com/fzenke/randman">https://github.com/fzenke/randman</a>.
+If using this, please cite Zenke, F., and Vogels, T.P. (2021). The Remarkable Robustness of Surrogate Gradient Learning for Instilling Complex Function in Spiking Neural Networks. Neural Computation 1–27.</p>
+<p>Generates event-based generalized spiking randman classification dataset.
+In this dataset each unit fires a fixed number of spikes. If information is set to be encoded in time, then only
+nb_spikes occurs per neuron for each trial at a specific time, which precludes rate/count based learning. If encoded
+in the spike rate/count, then the number of spikes each neuron generates encodes information while spike times are random.
+:param manifold_seed: The JAX PRNG key that determines the random manifolds
+:param random_seed: The JAX PRNG random seed, which determines random elements such as sampling from the manifold.
+:param nb_classes: The number of classes to generate. Defaults to 10
+:param nb_units: The number of units to assume. Defaults to 100
+:param nb_steps: The number of time steps to assume. Defaults to 100
+:param dim_manifold: The dimensionality of the hypercube the random manifold is generated along. Defaults to 2
+:param nb_spikes: The number of spikes per unit. Defaults to 1
+:param nb_samples: Number of samples from each manifold per class. Defaults to 1_000
+:param alpha: Randman smoothness parameter. Defaults to 2.0
+:param shuffe: Whether to shuffle the dataset. Defaults to True
+:param time_encode: Whether to encode information in spike timeing (alternative being rate/count). Defaults to True
+:param batch_sz: The size of the batch dimension. Defaults to None
+:param dtype: The data type of the output spikes and labels. Defaults to float32</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.gen_loss_landscape">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">gen_loss_landscape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">get_loss</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.gen_loss_landscape" title="Link to this definition">¶</a></dt>
+<dd><p>Generates a loss landscape plot from saved saved parameters throughout training.</p>
+<p>Args:
+get_loss: A function that takes in the model parameters and outputs a scalar loss
+load_params: A function that takes which number to load and outputs the parameters in a list
+n_iter: number of saved parameter checkpoints
+n_models: number of models to plot on the loss landscape</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.fast_sigmoid">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">fast_sigmoid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.fast_sigmoid" title="Link to this definition">¶</a></dt>
+<dd><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the fast-sigmoid
+function from Zenke, F., &amp; Ganguli, S. (2018). Superspike: Supervised learning in multilayer spiking neural networks. Neural computation, 30(6), 1514-1541.</p>
+<p>Args:
+slope: The sharpness factor of the fast sigmoid function</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.atan">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">atan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.atan" title="Link to this definition">¶</a></dt>
+<dd><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Arctangent
+function from Fang, W., Yu, Z., Chen, Y., Masquelier, T., Huang, T., &amp; Tian, Y. (2021). Incorporating learnable membrane time constant to enhance learning of spiking neural networks. In Proceedings of the IEEE/CVF international conference on computer vision (pp. 2661-2671).</p>
+<p>Args:
+alpha: The sharpness factor of the fast sigmoid function</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.multi_gauss">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">multi_gauss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.multi_gauss" title="Link to this definition">¶</a></dt>
+<dd><p>A function that returns the Heaviside step function with forward-mode autodiff compatible surrogate derivative for the Multi-Gaussian
+function from Yin, B., Corradi, F., &amp; Bohté, S. M. (2021). Accurate and efficient time-domain classification with adaptive spiking recurrent neural networks. Nature Machine Intelligence, 3(10), 905-913.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.layerwise_cosine_similarity">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">layerwise_cosine_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pytree_0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pytree_1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.layerwise_cosine_similarity" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the cosine similarity of each item between two pytrees with the same structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pytree_0</strong> – The first pytree with the same structure as pytree_1</p></li>
+<li><p><strong>pytree_1</strong> – The second pytree with the same structure as pytree_0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.global_cosine_similarity">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">global_cosine_similarity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pytree_0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pytree_1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.global_cosine_similarity" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the cosine similarity of all elements between two pytrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pytree_0</strong> – The first pytree</p></li>
+<li><p><strong>pytree_1</strong> – The second pytree</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A pytree with the structure as the inputs. Each item contains the scalar cosine similarity value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="slax.compare_grads">
+<span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">compare_grads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_grad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_func_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">layerwise_cosine_similarity</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.compare_grads" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a comparison function on a given reference pytree of gradients and a calculated pytree of gradients, using
+a given training function and its arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_func</strong> – The returned function from calling <cite>train_online_deffered</cite> or a similar function with the same inputs</p></li>
+<li><p><strong>outputs</strong> (<em>and</em>)</p></li>
+<li><p><strong>reference_params</strong> – A pytree of the reference parameters</p></li>
+<li><p><strong>reference_grad</strong> – A pytree of the reference gradients</p></li>
+<li><p><strong>train_func_args</strong> – A tuple of the arguments for <cite>train_func</cite> (params,carry,batch,opt_state)</p></li>
+<li><p><strong>comparison_func</strong> – A function that takes in two pytrees and performs some comparison operation. Defaults to <a href="#id1"><span class="problematic" id="id2">`</span></a>layerwise_cosine_similarity’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The output of comparison_func</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.RNN">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">RNN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.iinfo(jnp.uint32).max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadcast_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.RNN" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Base class for all neural network modules.</p>
+<p>Layers and models should subclass this class.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Module</span></code>’s can contain submodules, and in this way can be nested in a tree
+structure. Submodules can be assigned as regular attributes inside the
+<code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
+<p>You can define arbitrary “forward pass” methods on your <code class="docutils literal notranslate"><span class="pre">Module</span></code> subclass.
+While no methods are special-cased, <code class="docutils literal notranslate"><span class="pre">__call__</span></code> is a popular choice since
+you can call the <code class="docutils literal notranslate"><span class="pre">Module</span></code> directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">flax</span> <span class="kn">import</span> <span class="n">nnx</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="gp">... </span>  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">x</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Applies a provided model or module over a sequence.</p>
+<p>Args:
+model: The model to apply of the sequence
+xs: Input data
+unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at the cost of compilation time.
+broadcast_state: If true, executes the first time step outside of the loop</p>
+<p>Returns:
+A model/module that loops over the first axis of its input</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.train_online_deferred">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">train_online_deferred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snnModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_online_deferred" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>A helper tool for easily implementing an online training loop where parameter updates are saved till the end.</p>
+<p>Args:
+snnModel: An initializes Flax module
+loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+either an array to averaged or a scalar loss value.
+optimizer: An initialized optax optimizer</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="slax.train_online_deferred.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_online_deferred.__call__" title="Link to this definition">¶</a></dt>
+<dd><p>Args:
+batch: Tuple of the input and labels</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.train_online">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">train_online</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snnModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_aux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_online" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.</p>
+<p>Args:
+snnModel: An initializes Flax module
+loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+either an array to averaged or a scalar loss value.
+optimizer: An initialized optax optimizer</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="slax.train_online.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_online.__call__" title="Link to this definition">¶</a></dt>
+<dd><p>Args:
+batch: Tuple of the input and labels</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.FPTT">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">FPTT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snnModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.FPTT" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>A helper tool for easily implementing an online training loop where parameter updates are applied at each time-step.</p>
+<p>Args:
+snnModel: An initializes Flax module
+loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+either an array to averaged or a scalar loss value.
+optimizer: An initialized optax optimizer</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="slax.FPTT.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.FPTT.__call__" title="Link to this definition">¶</a></dt>
+<dd><p>Args:
+batch: Tuple of the input and labels</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.train_offline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">train_offline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snnModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_offline" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>A helper tool for easily implementing an online training loop where parameter updates are saved till the end.</p>
+<p>Args:
+snnModel: An initializes Flax module
+loss_fn: A loss function that takes the model output (excluding carry) and the batch labels as arguments and returns
+either an array to averaged or a scalar loss value.
+optimizer: An initialized optax optimizer</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="slax.train_offline.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.train_offline.__call__" title="Link to this definition">¶</a></dt>
+<dd><p>Args:
+batch: Tuple of the input and labels</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.Neuron">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">Neuron</span></span><a class="headerlink" href="#slax.Neuron" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>SNN base class.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="slax.connect">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chains</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#slax.connect" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Connects modules together while optionally specifying skip and recurrent connections.</p>
+<p>Args:
+chains: A list of modules
+cat: A dictionary for skip/recurrent connections where each key is a number corresponding to the list index and the values are what it additionally feed to.</p>
+<p>Returns:
+A module that sequentially connects the provides modules and adds any additionally specified connections.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="id0">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">slax.</span></span><span class="sig-name descname"><span class="pre">RNN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unroll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">jnp.iinfo(jnp.uint32).max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadcast_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">flax.nnx.Module</span></code></p>
+<p>Base class for all neural network modules.</p>
+<p>Layers and models should subclass this class.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Module</span></code>’s can contain submodules, and in this way can be nested in a tree
+structure. Submodules can be assigned as regular attributes inside the
+<code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
+<p>You can define arbitrary “forward pass” methods on your <code class="docutils literal notranslate"><span class="pre">Module</span></code> subclass.
+While no methods are special-cased, <code class="docutils literal notranslate"><span class="pre">__call__</span></code> is a popular choice since
+you can call the <code class="docutils literal notranslate"><span class="pre">Module</span></code> directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">flax</span> <span class="kn">import</span> <span class="n">nnx</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="gp">... </span>  <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">x</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Applies a provided model or module over a sequence.</p>
+<p>Args:
+model: The model to apply of the sequence
+xs: Input data
+unroll: The number of loop iterations to unroll. In general, a higher number reduces execution time at the cost of compilation time.
+broadcast_state: If true, executes the first time step outside of the loop</p>
+<p>Returns:
+A model/module that loops over the first axis of its input</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Slax</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">slax</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">API Reference</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">API Reference</a></li>
+      <li>Next: <a href="eval/index.html" title="next chapter">slax.eval</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Thomas Summe.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../../_sources/autoapi/slax/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
